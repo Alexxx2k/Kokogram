@@ -14,8 +14,8 @@ Kokogram позволяет вести личные и групповые чат
 
 ## Документация
 
-- FS-спецификация: `docs/FS-spec_Psarev.pdf`
-- HLD: `docs/HLD_Psarev.pdf`
+- FS-спецификация: `docs/FS-spec.pdf`
+- HLD: `docs/HLD.pdf`
 
 ## Структура репозитория
 
