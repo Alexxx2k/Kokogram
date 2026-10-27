@@ -19,11 +19,83 @@ Kokogram позволяет вести личные и групповые чат
 
 ## Структура репозитория
 
-> Будет дополняться по мере реализации.
+```
+Kokogram/
+├── .github/
+│   └── pull_request_template.md  # шаблон описания PR
+├── docs/  # FS и HLD (PDF)
+├── web/  # веб-клиент (HTML, CSS, JavaScript)
+│   ├── index.html
+│   ├── css/
+│   └── js/
+├── gateway/  # API Gateway
+├── users/  # сервис пользователей
+├── chats/  # сервис чатов
+├── messages/  # сервис сообщений
+├── presence/  # сервис онлайн-статусов
+├── gif/  # сервис GIF
+├── .editorconfig
+├── .gitignore
+└── README.md
+```
+
+### Структура сервиса
+
+Каждый сервис (`users`, `chats`, `messages`, `presence`, `gif`) устроен одинаково и повторяет слои из HLD §5.1:
+
+```
+<сервис>/
+├── app/
+│   ├── main.py  # создание приложения FastAPI, GET /health
+│   ├── api/  # входящий слой: роутеры, схемы Pydantic, обработчики событий
+│   ├── services/  # бизнес-логика (без импорта FastAPI, SQLAlchemy, httpx)
+│   ├── ports/  # интерфейсы (typing.Protocol)
+│   └── adapters/  # реализации портов: БД, Redis, S3, HTTP, RabbitMQ
+├── tests/
+│   ├── unit/  # модульные тесты
+│   └── integration/  # интеграционные тесты
+└── requirements.txt
+```
+
+### API Gateway
+
+В Gateway нет бизнес-логики, поэтому вместо `services/` у него свои папки:
+
+```
+gateway/app/
+├── main.py
+├── api/  # проксирующие роутеры, WebSocket-эндпоинт, POST /internal/ws/deliver
+├── routing/  # RouteTable: соответствие префикса пути сервису
+├── ws/  # реестр WebSocket-соединений, протокол канала
+├── ports/  # интерфейсы клиентов к другим сервисам
+└── adapters/  # реализации клиентов на httpx
+```
+
+### Правила
+
+- Бизнес-логика находится только в `services/`; роутеры и обработчики событий её не содержат.
+- Всё внешнее (БД, кэш, брокер, хранилище, другие сервисы) сервис получает через порты, реализации лежат в `adapters/`.
+- У каждого сервиса свой `requirements.txt`.
+- Пустые папки хранятся через `.gitkeep`; когда в папке появляется реальный файл, `.gitkeep` удаляется.
 
 ## Как запустить
 
-> Будет добавлено вместе с `docker-compose`.
+### Требования
+
+- Python 3.12
+- Docker и Docker Compose (появятся вместе с `docker-compose.test.yml`)
+
+### Запуск сервиса локально
+
+Из папки нужного сервиса, например `users`:
+```
+python -m venv .venv
+source .venv/Scripts/activate # Git Bash, если на Windows
+source .venv/bin/activate # Если на macOS/Linux
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+Проверка: `http://127.0.0.1:8000/health` возвращает `{"status": "ok"}`.
 
 ## Процесс разработки
 
