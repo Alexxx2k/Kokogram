@@ -10,3 +10,6 @@ indent_size = 4
 
 [*.{html,css,js,json,yml,yaml,md}]
 indent_size = 2
+
+[Makefile]
+indent_style = tab

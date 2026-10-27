@@ -1,0 +1,69 @@
+x-infra-profiles: &infra-profiles [infra, full]
+
+services:
+  postgres:
+    image: postgres:16
+    profiles: *infra-profiles
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-kokogram}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kokogram}
+      POSTGRES_DB: ${POSTGRES_DB:-kokogram}
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kokogram} -d ${POSTGRES_DB:-kokogram}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7
+    profiles: *infra-profiles
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    profiles: *infra-profiles
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-kokogram}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-kokogram}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  seaweedfs:
+    image: chrislusf/seaweedfs
+    profiles: *infra-profiles
+    command: server -s3 -dir=/data
+    ports:
+      - "8333:8333"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:9333/cluster/status || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  giphy-stub:
+    build: ./tools/giphy-stub
+    profiles: *infra-profiles
+    environment:
+      PUBLIC_BASE_URL: ${GIPHY_STUB_PUBLIC_URL:-http://giphy-stub:8080}
+    ports:
+      - "8090:8080"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10

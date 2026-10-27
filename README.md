@@ -78,24 +78,46 @@ gateway/app/
 - У каждого сервиса свой `requirements.txt`.
 - Пустые папки хранятся через `.gitkeep`; когда в папке появляется реальный файл, `.gitkeep` удаляется.
 
-## Как запустить
+### Как запустить
 
 ### Требования
 
 - Python 3.12
-- Docker и Docker Compose (появятся вместе с `docker-compose.test.yml`)
+- Docker и Docker Compose
+- `make`
+
+### Инфраструктура
+
+Поднимает PostgreSQL, Redis, RabbitMQ, SeaweedFS и заглушку Giphy (HLD §5.4, профиль `infra`):
+
+```
+cp .env.example .env  # один раз; значения по умолчанию подходят для разработки
+make up  # поднять и дождаться готовности (все контейнеры healthy)
+make ps  # статус контейнеров
+make logs s=seaweedfs  # логи сервиса (без s: все)
+make down  # остановить, данные сохраняются
+make clean  # остановить и удалить данные
+make help  # список всех команд
+```
+
+Порты: PostgreSQL `5432`, Redis `6379`, RabbitMQ `5672` (панель `15672`), SeaweedFS S3 `8333`, заглушка Giphy `8090`.
+
+Заглушка Giphy: режим отказа включается запросом `POST http://localhost:8090/__admin/fail?enabled=true` (выключается `enabled=false`).
 
 ### Запуск сервиса локально
 
 Из папки нужного сервиса, например `users`:
+
 ```
 python -m venv .venv
-source .venv/Scripts/activate # Git Bash, если на Windows
-source .venv/bin/activate # Если на macOS/Linux
+source .venv/Scripts/activate  # Git Bash на Windows
+# source .venv/bin/activate  # macOS/Linux
 pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
-Проверка: `http://127.0.0.1:8000/health` возвращает `{"status": "ok"}`.
+Проверка: `http://127.0.0.1:8000/health` возвращает `{"status": "ok"}`. Документация эндпоинтов: `http://127.0.0.1:8000/docs`.
+
+## Процесс разработки
 
 ## Процесс разработки
 
