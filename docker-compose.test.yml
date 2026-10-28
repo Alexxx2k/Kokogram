@@ -1,6 +1,37 @@
 x-infra-profiles: &infra-profiles [infra, full]
 
+x-service-build: &service-build
+  context: .
+  dockerfile: docker/service.Dockerfile
+
 services:
+  users:
+    profiles: [full]
+    image: kokogram-users
+    build: {<<: *service-build, args: {SERVICE: users}}
+  chats:
+    profiles: [full]
+    image: kokogram-chats
+    build: {<<: *service-build, args: {SERVICE: chats}}
+  messages:
+    profiles: [full]
+    image: kokogram-messages
+    build: {<<: *service-build, args: {SERVICE: messages}}
+  presence:
+    profiles: [full]
+    image: kokogram-presence
+    build: {<<: *service-build, args: {SERVICE: presence}}
+  gif:
+    profiles: [full]
+    image: kokogram-gif
+    build: {<<: *service-build, args: {SERVICE: gif}}
+  gateway:
+    profiles: [full]
+    image: kokogram-gateway
+    build: {<<: *service-build, args: {SERVICE: gateway}}
+    ports:
+      - "${GATEWAY_PORT:-8000}:8000"
+
   postgres:
     image: postgres:16
     volumes:
