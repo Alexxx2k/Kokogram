@@ -3,6 +3,8 @@ x-infra-profiles: &infra-profiles [infra, full]
 services:
   postgres:
     image: postgres:16
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     profiles: *infra-profiles
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-kokogram}
@@ -18,6 +20,8 @@ services:
 
   redis:
     image: redis:7
+    volumes:
+      - redis_data:/data
     profiles: *infra-profiles
     ports:
       - "6379:6379"
@@ -29,6 +33,9 @@ services:
 
   rabbitmq:
     image: rabbitmq:3.13-management
+    hostname: rabbitmq
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
     profiles: *infra-profiles
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-kokogram}
@@ -44,6 +51,8 @@ services:
 
   seaweedfs:
     image: chrislusf/seaweedfs
+    volumes:
+      - seaweedfs_data:/data
     profiles: *infra-profiles
     command: server -s3 -dir=/data
     ports:
@@ -67,3 +76,9 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  seaweedfs_data:
