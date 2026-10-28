@@ -24,6 +24,7 @@ Kokogram/
 ├── .github/
 │   └── pull_request_template.md  # шаблон описания PR
 ├── docs/  # FS и HLD (PDF)
+├── shared/  # общий пакет kokogram_shared: время, идентификаторы, токены, формат ошибок
 ├── web/  # веб-клиент (HTML, CSS, JavaScript)
 │   ├── index.html
 │   ├── css/
@@ -71,6 +72,31 @@ gateway/app/
 └── adapters/  # реализации клиентов на httpx
 ```
 
+### Общий пакет `shared/`
+
+Абстракции времени, идентификаторов и токенов и единый формат ошибок
+(HLD §4.1, §5.3) лежат в `shared/` и подключаются ко всем сервисам, включая Gateway.
+Пакет называется `kokogram-shared` (для pip), импортируется как `kokogram_shared`.
+
+```
+shared/
+├── pyproject.toml
+└── kokogram_shared/
+    ├── clock.py  # Clock, SystemClock, FakeClock (advance, set)
+    ├── ids.py  # IdGenerator, UuidGenerator, SequentialIdGenerator
+    ├── tokens.py  # TokenGenerator, SecretsTokenGenerator, FixedTokenGenerator
+    ├── errors.py  # ErrorCode, AppError, формат {error: {code, message, details}}
+    └── fastapi_handlers.py  # register_error_handlers(app)
+```
+
+- Сервисы не вызывают `datetime.now()`, `uuid4()`, `secrets`, `random`, `time.sleep`
+  напрямую: зависят от `Clock`, `IdGenerator`, `TokenGenerator` и получают их
+  через конструктор. Прямые вызовы разрешены только в реализациях внутри `shared`.
+- В продакшене подставляются `SystemClock`, `UuidGenerator`, `SecretsTokenGenerator`,
+  в тестах `FakeClock`, `SequentialIdGenerator`, `FixedTokenGenerator`.
+
+Пакет подключён ко всем сервисам строкой `-e ../shared[fastapi]` в их `requirements.txt`.
+
 ### Правила
 
 - Бизнес-логика находится только в `services/`; роутеры и обработчики событий её не содержат.
@@ -78,7 +104,7 @@ gateway/app/
 - У каждого сервиса свой `requirements.txt`.
 - Пустые папки хранятся через `.gitkeep`; когда в папке появляется реальный файл, `.gitkeep` удаляется.
 
-### Как запустить
+## Запуск
 
 ### Требования
 
@@ -88,7 +114,7 @@ gateway/app/
 
 ### Инфраструктура
 
-Поднимает PostgreSQL, Redis, RabbitMQ, SeaweedFS и заглушку Giphy (HLD §5.4, профиль `infra`):
+Поднимается PostgreSQL, Redis, RabbitMQ, SeaweedFS и заглушка Giphy (HLD §5.4, профиль `infra`) с помощью `make`:
 
 ```
 cp .env.example .env  # один раз; значения по умолчанию подходят для разработки
@@ -116,8 +142,6 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 Проверка: `http://127.0.0.1:8000/health` возвращает `{"status": "ok"}`. Документация эндпоинтов: `http://127.0.0.1:8000/docs`.
-
-## Процесс разработки
 
 ## Процесс разработки
 
