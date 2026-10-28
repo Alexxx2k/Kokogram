@@ -25,6 +25,7 @@ Kokogram/
 │   └── pull_request_template.md  # шаблон описания PR
 ├── docs/  # FS и HLD (PDF)
 ├── shared/  # общий пакет kokogram_shared: время, идентификаторы, токены, формат ошибок
+├── db/  # миграции Alembic (общие для всех сервисов)
 ├── web/  # веб-клиент (HTML, CSS, JavaScript)
 │   ├── index.html
 │   ├── css/
@@ -108,40 +109,65 @@ shared/
 
 ### Требования
 
-- Python 3.12
+- Python 3.12 (рекомендуется 3.12.10)
 - Docker и Docker Compose
 - `make`
+---
 
-### Инфраструктура
+### Шаг 1. Инфраструктура
 
-Поднимается PostgreSQL, Redis, RabbitMQ, SeaweedFS и заглушка Giphy (HLD §5.4, профиль `infra`) с помощью `make`:
+Все команды управления контейнерами выполняются **из корня проекта**:
 
-```
-cp .env.example .env  # один раз; значения по умолчанию подходят для разработки
-make up  # поднять и дождаться готовности (все контейнеры healthy)
+```bash
+cp .env.example .env  # один раз перед первым запуском
+make up  # поднять инфраструктуру и дождаться готовности (healthy)
 make ps  # статус контейнеров
-make logs s=seaweedfs  # логи сервиса (без s: все)
-make down  # остановить, данные сохраняются
-make clean  # остановить и удалить данные
+make logs s=seaweedfs  # логи сервиса (без s — логи всех)
+make down  # остановить контейнеры (данные сохраняются)
+make clean  # остановить и удалить данные (volumes)
 make help  # список всех команд
 ```
 
-Порты: PostgreSQL `5432`, Redis `6379`, RabbitMQ `5672` (панель `15672`), SeaweedFS S3 `8333`, заглушка Giphy `8090`.
+Порты: PostgreSQL `5432`, Redis `6379`, RabbitMQ `5672` (панель `15672`), SeaweedFS S3 `8333`, Giphy-заглушка `8090`.
+Режим отказа Giphy: `POST http://localhost:8090/__admin/fail?enabled=true` (выключить: `enabled=false`).
 
-Заглушка Giphy: режим отказа включается запросом `POST http://localhost:8090/__admin/fail?enabled=true` (выключается `enabled=false`).
+---
 
-### Запуск сервиса локально
+### Шаг 2. Миграции БД
 
-Из папки нужного сервиса, например `users`:
+Один Alembic на все сервисы (подробности в `db/README.md`). Для применения миграций нужно установить зависимости из `db/requirements.txt` в виртуальное окружение и запустить команды **из корня проекта** при поднятой инфраструктуре:
 
+```bash
+# Установка зависимостей миграций (один раз)
+pip install -r db/requirements.txt
+
+# Применение и откат миграций
+make migrate
+make migrate-down
 ```
+
+---
+
+### Шаг 3. Запуск конкретного сервиса локально
+
+Каждый сервис разрабатывается и запускается изолированно. Запуск нужного сервиса (например, `users`):
+
+```bash
+cd users
+
+# Создание и активация venv сервиса (один раз)
 python -m venv .venv
-source .venv/Scripts/activate  # Git Bash на Windows
-# source .venv/bin/activate  # macOS/Linux
+source .venv/Scripts/activate  # Git Bash на Windows (для macOS/Linux: source .venv/bin/activate)
+
+# Установка зависимостей сервиса
 pip install -r requirements.txt
+
+# Запуск сервиса
 uvicorn app.main:app --reload
 ```
-Проверка: `http://127.0.0.1:8000/health` возвращает `{"status": "ok"}`. Документация эндпоинтов: `http://127.0.0.1:8000/docs`.
+
+Проверка: `http://127.0.0.1:8000/health` -> `{"status": "ok"}`.
+Интерактивная документация OpenAPI (Swagger): `http://127.0.0.1:8000/docs`.
 
 ## Процесс разработки
 
@@ -159,7 +185,7 @@ uvicorn app.main:app --reload
 
 ### Доска задач
 
-GitHub Projects, статусы: Todo -> In progress -> Done. Каждая карточка ссылается на конкретные пункты FS и разделы HLD. Исполнитель назначается при взятии задачи в работу.
+GitHub Projects, статусы: Todo -> In progress -> Done. Каждая карточка ссылается на конкретные пункты FS и разделы HLD. Исполнитель назначается при создании тикета.
 
 ### Definition of Done
 
