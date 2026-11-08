@@ -27,4 +27,3 @@ jobs:
 
       - name: Run Ruff format check
         run: ruff format --check .
-        
