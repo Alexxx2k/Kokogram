@@ -23,7 +23,11 @@ ITEMS = {
     },
     "too_big": {
         "title": "cat too big",
-        "variants": {"original": 50 * MB + 1, "fixed_height": 50 * MB + 1, "fixed_height_small": 50 * MB + 1},
+        "variants": {
+            "original": 50 * MB + 1,
+            "fixed_height": 50 * MB + 1,
+            "fixed_height_small": 50 * MB + 1,
+        },
     },
     "no_preview": {
         "title": "cat no preview",
