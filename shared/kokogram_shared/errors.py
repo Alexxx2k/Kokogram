@@ -92,7 +92,6 @@ def error_body(
 
 
 class AppError(Exception):
-
     def __init__(
         self,
         code: ErrorCode,

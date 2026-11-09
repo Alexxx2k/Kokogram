@@ -4,6 +4,7 @@ from kokogram_shared.fastapi_handlers import register_error_handlers
 app = FastAPI(title="gif")
 register_error_handlers(app)
 
+
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
