@@ -17,7 +17,7 @@ def get_url() -> URL | str:
     if url:
         for prefix in ("postgresql://", "postgres://"):
             if url.startswith(prefix):
-                return "postgresql+psycopg://" + url[len(prefix):]
+                return "postgresql+psycopg://" + url[len(prefix) :]
         return url
     return URL.create(
         "postgresql+psycopg",

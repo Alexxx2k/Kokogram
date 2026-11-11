@@ -3,18 +3,15 @@ from uuid import UUID, uuid4
 
 
 class IdGenerator(Protocol):
-
     def new_id(self) -> UUID: ...
 
 
 class UuidGenerator:
-
     def new_id(self) -> UUID:
         return uuid4()
 
 
 class SequentialIdGenerator:
-
     def __init__(self, start: int = 1) -> None:
         self._next = start
 

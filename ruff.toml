@@ -1,0 +1,27 @@
+target-version = "py312"
+line-length = 100
+
+[format]
+indent-style = "space"
+
+[lint]
+select = [
+    "E",       # Базовые ошибки стиля PEP 8 (длина строк, отступы, синтаксис)
+    "F",       # Логические ошибки (неиспользуемые импорты/переменные, дубликаты)
+    "I",       # Сортировка и группировка импортов (isort)
+    "DTZ",     # Запрет datetime без явного часового пояса (flake8-datetimez)
+    "TID251",  # Запрет прямых системных вызовов по HLD §5.3 (banned-api)
+]
+
+[lint.flake8-tidy-imports.banned-api]
+"datetime.datetime.now" = { msg = "Используйте Clock (HLD 5.3)" }
+"datetime.datetime.utcnow" = { msg = "Используйте Clock (HLD 5.3)" }
+"uuid.uuid4" = { msg = "Используйте IdGenerator (HLD 5.3)" }
+"secrets" = { msg = "Используйте TokenGenerator (HLD 5.3)" }
+"random" = { msg = "Источник случайности должен быть подменяемым (HLD 5.3)" }
+"time.sleep" = { msg = "Не используйте sleep в коде сервисов (HLD 5.3)" }
+
+[lint.per-file-ignores]
+"shared/kokogram_shared/clock.py" = ["TID251"]
+"shared/kokogram_shared/ids.py" = ["TID251"]
+"shared/kokogram_shared/tokens.py" = ["TID251"]
