@@ -1,0 +1,22 @@
+# секреты и служебное
+.git
+.github
+.idea
+.vscode
+.env
+**/.env
+
+# python-мусор
+**/.venv
+**/__pycache__
+**/*.pyc
+**/*.egg-info
+**/.pytest_cache
+**/.ruff_cache
+
+# не нужно образам сервисов
+docs
+web
+db
+tools
+**/tests
