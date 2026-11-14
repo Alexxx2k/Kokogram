@@ -11,9 +11,6 @@ _request_id_var: contextvars.ContextVar[str | None] = contextvars.ContextVar(
 )
 _user_id_var: contextvars.ContextVar[str | None] = contextvars.ContextVar("user_id", default=None)
 _event_id_var: contextvars.ContextVar[str | None] = contextvars.ContextVar("event_id", default=None)
-_event_id_var: contextvars.ContextVar[str | None] = contextvars.ContextVar(
-    "event_id", default=None
-)
 
 
 def get_request_id() -> str | None:
