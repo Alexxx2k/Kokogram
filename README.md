@@ -87,7 +87,10 @@ shared/
     ├── ids.py  # IdGenerator, UuidGenerator, SequentialIdGenerator
     ├── tokens.py  # TokenGenerator, SecretsTokenGenerator, FixedTokenGenerator
     ├── errors.py  # ErrorCode, AppError, формат {error: {code, message, details}}
-    └── fastapi_handlers.py  # register_error_handlers(app)
+    ├── url_signer.py  # UrlSigner (подпись и проверка временных ссылок, HLD §1.5)
+    ├── logging.py  # JSON-логирование в stdout с контекстом request_id и user_id
+    ├── fastapi_handlers.py  # register_error_handlers(app)
+    └── fastapi_middleware.py  # RequestContextMiddleware, setup_observability(app, service)
 ```
 
 - Сервисы не вызывают `datetime.now()`, `uuid4()`, `secrets`, `random`, `time.sleep`
