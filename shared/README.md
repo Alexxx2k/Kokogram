@@ -59,4 +59,4 @@ app = FastAPI(title="users")
 setup_observability(app, service="users")
 ```
 
-Каждый лог выводится в `stdout` в формате JSON с полями: `time`, `service`, `level`, `event`, `request_id`, `user_id`, `error_code`.
+Каждый лог выводится в `stdout` в формате JSON с полями: `time`, `service`, `level`, `event`, `request_id`, `user_id`, `event_id`, `error_code`.

@@ -25,6 +25,8 @@ class UrlSigner:
             raise ValueError("ttl должен быть положительным")
 
     def sign(self, path: str, extra: dict[str, str] | None = None) -> str:
+        if "?" in path:
+            raise ValueError("path не должен содержать query-параметры; используйте extra")
         clean_path = _normalize_path(path)
         expires = int(self._clock.now().timestamp()) + self._ttl_seconds
         sig = self._compute_sig(clean_path, expires, extra)
@@ -35,7 +37,7 @@ class UrlSigner:
                 params[key] = extra[key]
         params["expires"] = expires
         params["sig"] = sig
-        return f"{clean_path}?{urlencode(params)}"
+        return f"{path}?{urlencode(params)}"
 
     def verify(
         self,
@@ -44,6 +46,8 @@ class UrlSigner:
         sig: str,
         extra: dict[str, str] | None = None,
     ) -> None:
+        if "?" in path:
+            raise AppError(ErrorCode.UNAUTHORIZED)
         clean_path = _normalize_path(path)
         try:
             expires_ts = int(expires)

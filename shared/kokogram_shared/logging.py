@@ -10,6 +10,10 @@ _request_id_var: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "request_id", default=None
 )
 _user_id_var: contextvars.ContextVar[str | None] = contextvars.ContextVar("user_id", default=None)
+_event_id_var: contextvars.ContextVar[str | None] = contextvars.ContextVar("event_id", default=None)
+_event_id_var: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "event_id", default=None
+)
 
 
 def get_request_id() -> str | None:
@@ -36,6 +40,18 @@ def reset_user_id(token: contextvars.Token[str | None]) -> None:
     _user_id_var.reset(token)
 
 
+def get_event_id() -> str | None:
+    return _event_id_var.get()
+
+
+def set_event_id(value: str | None) -> contextvars.Token[str | None]:
+    return _event_id_var.set(value)
+
+
+def reset_event_id(token: contextvars.Token[str | None]) -> None:
+    _event_id_var.reset(token)
+
+
 class JsonFormatter(logging.Formatter):
     def __init__(self, service: str, clock: Clock | None = None) -> None:
         super().__init__()
@@ -50,6 +66,7 @@ class JsonFormatter(logging.Formatter):
             "event": record.getMessage(),
             "request_id": getattr(record, "request_id", None) or _request_id_var.get(),
             "user_id": getattr(record, "user_id", None) or _user_id_var.get(),
+            "event_id": getattr(record, "event_id", None) or _event_id_var.get(),
             "error_code": getattr(record, "error_code", None),
         }
         if record.exc_info:
