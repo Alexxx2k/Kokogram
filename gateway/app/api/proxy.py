@@ -2,7 +2,7 @@ from typing import Annotated
 
 import httpx
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 from kokogram_shared.errors import AppError, ErrorCode
 from kokogram_shared.logging import get_request_id, set_user_id
 
@@ -65,9 +65,8 @@ async def forward_stream(
         headers["X-Request-ID"] = req_id
 
     content = None
-    if request.method not in ("GET", "HEAD", "OPTIONS") or (
-        "content-length" in request.headers or "transfer-encoding" in request.headers
-    ):
+    content_length = request.headers.get("content-length")
+    if content_length not in (None, "0") or "transfer-encoding" in request.headers:
         content = request.stream()
 
     try:
@@ -106,7 +105,9 @@ async def forward_stream(
     "/internal/{path:path}",
     methods=["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"],
 )
-async def reject_internal_direct(path: str) -> None:
+async def reject_internal_direct(path: str, request: Request) -> Response:
+    if path.strip("/") == "ws/deliver" and request.method == "POST":
+        return Response(status_code=204)
     raise AppError(ErrorCode.NOT_FOUND)
 
 

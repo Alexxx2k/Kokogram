@@ -12,6 +12,7 @@ from gateway.app.routing.route_table import RouteTable
 
 _route_table = RouteTable()
 _http_client: httpx.AsyncClient | None = None
+_in_memory_users_client = InMemoryUsersClient()
 
 
 def get_route_table() -> RouteTable:
@@ -38,5 +39,5 @@ def get_users_client(
         or config.users_service_url == "mock"
     )
     if use_mock:
-        return InMemoryUsersClient()
+        return _in_memory_users_client
     return HttpUsersClient(base_url=config.users_service_url, client=http_client)
