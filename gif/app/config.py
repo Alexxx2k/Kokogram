@@ -7,7 +7,13 @@ class Settings(BaseSettings):
     CACHE_TTL_SEARCH: int = 300
     CACHE_TTL_CHECK: int = 3600
     DEFAULT_LIMIT: int = 20
-    ALLOWED_HOSTS: list[str] = ["localhost", "giphy-stub", "giphy.com", "media.giphy.com", "i.giphy.com"]
+    ALLOWED_HOSTS: list[str] = [
+        "localhost",
+        "giphy-stub",
+        "giphy.com",
+        "media.giphy.com",
+        "i.giphy.com",
+    ]
 
     class Config:
         env_file = ".env"

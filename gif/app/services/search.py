@@ -1,9 +1,10 @@
 import json
 import logging
-from gif.app.ports.giphy import GiphyClient
-from gif.app.ports.cache import GifCache
-from gif.app.services.selector import GifVariantSelector, GifVariant
+
 from gif.app.config import settings
+from gif.app.ports.cache import GifCache
+from gif.app.ports.giphy import GiphyClient
+from gif.app.services.selector import GifVariant, GifVariantSelector
 
 logger = logging.getLogger("gif")
 
@@ -31,10 +32,7 @@ class SearchService:
 
             selected = self.selector.select(variants)
             if selected:
-                result.append({
-                    "send_url": selected.send_url,
-                    "preview_url": selected.preview_url
-                })
+                result.append({"send_url": selected.send_url, "preview_url": selected.preview_url})
         return result
 
     async def _get_gifs(self, q: str | None, limit: int) -> list[dict]:

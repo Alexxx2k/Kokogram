@@ -1,8 +1,8 @@
+import logging
 import os
 import sys
-import logging
 
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -11,12 +11,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "shared")
 from kokogram_shared.fastapi_handlers import register_error_handlers
 from kokogram_shared.fastapi_middleware import setup_observability
 
-from gif.app.exceptions import GifUnavailableError
-from gif.app.adapters.giphy_http import GiphyHttpClient
-from gif.app.adapters.cdn_http import CdnHttpClient
 from gif.app.adapters.cache_memory import MemoryGifCache
-from gif.app.services.search import SearchService
+from gif.app.adapters.cdn_http import CdnHttpClient
+from gif.app.adapters.giphy_http import GiphyHttpClient
+from gif.app.exceptions import GifUnavailableError
 from gif.app.services.check import CheckService
+from gif.app.services.search import SearchService
 
 app = FastAPI(title="gif")
 logger = logging.getLogger("gif")
@@ -53,7 +53,10 @@ def health() -> dict:
 @app.get("/gifs/search", response_model=SearchResponse)
 async def search(q: str = ""):
     if len(q) > 20:
-        raise HTTPException(status_code=400, detail={"error": "validation_error", "message": "query_too_long"})
+        raise HTTPException(
+            status_code=400,
+            detail={"error": "validation_error", "message": "query_too_long"},
+        )
     gifs = await search_service.search(q)
     return {"gifs": gifs}
 

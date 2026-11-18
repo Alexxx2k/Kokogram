@@ -1,5 +1,7 @@
 import httpx
+
 from gif.app.exceptions import GifUnavailableError
+
 
 class CdnHttpClient:
     def __init__(self):

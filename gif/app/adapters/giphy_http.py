@@ -1,12 +1,13 @@
 import httpx
+
 from gif.app.config import settings
 from gif.app.exceptions import GifUnavailableError
+
 
 class GiphyHttpClient:
     def __init__(self):
         self.client = httpx.AsyncClient(
-            base_url=settings.GIPHY_BASE_URL,
-            timeout=settings.GIPHY_TIMEOUT
+            base_url=settings.GIPHY_BASE_URL, timeout=settings.GIPHY_TIMEOUT
         )
 
     async def _get(self, path: str, params: dict) -> list[dict]:

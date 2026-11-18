@@ -1,5 +1,6 @@
 import time
 
+
 class MemoryGifCache:
     def __init__(self):
         self._cache: dict[str, tuple[str, float]] = {}

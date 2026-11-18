@@ -1,6 +1,6 @@
-from urllib.parse import urlparse
 import ipaddress
 from typing import Tuple
+from urllib.parse import urlparse
 
 
 def validate_url(url: str, allowed_hosts: list[str]) -> Tuple[bool, str | None]:

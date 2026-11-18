@@ -1,10 +1,10 @@
 import logging
 
-from gif.app.exceptions import GifUnavailableError
-from gif.app.ports.cdn import CdnClient
-from gif.app.ports.cache import GifCache
-from gif.app.services.url_validator import validate_url
 from gif.app.config import settings
+from gif.app.exceptions import GifUnavailableError
+from gif.app.ports.cache import GifCache
+from gif.app.ports.cdn import CdnClient
+from gif.app.services.url_validator import validate_url
 
 logger = logging.getLogger("gif")
 

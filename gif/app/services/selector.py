@@ -1,5 +1,5 @@
-from typing import List, Optional
 from dataclasses import dataclass
+from typing import List, Optional
 
 MAX_SEND_SIZE = 50 * 1024 * 1024
 MAX_PREVIEW_SIZE = 1 * 1024 * 1024
@@ -31,7 +31,4 @@ class GifVariantSelector:
 
         preview_variant = sorted(valid_preview_variants, key=lambda v: v.size, reverse=True)[0]
 
-        return SelectedGif(
-            send_url=send_variant.url,
-            preview_url=preview_variant.url
-        )
+        return SelectedGif(send_url=send_variant.url, preview_url=preview_variant.url)

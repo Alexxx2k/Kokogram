@@ -1,4 +1,5 @@
-from typing import Protocol, Any
+from typing import Any, Protocol
+
 
 class GiphyClient(Protocol):
     async def search(self, q: str, limit: int) -> list[dict[str, Any]]: ...
