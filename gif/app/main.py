@@ -1,16 +1,16 @@
 import os
 import sys
+import logging
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "shared"))
 
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "shared"))
 
 from kokogram_shared.fastapi_handlers import register_error_handlers
 from kokogram_shared.fastapi_middleware import setup_observability
 
-from gif.app.config import settings
 from gif.app.exceptions import GifUnavailableError
 from gif.app.adapters.giphy_http import GiphyHttpClient
 from gif.app.adapters.cdn_http import CdnHttpClient
@@ -19,6 +19,7 @@ from gif.app.services.search import SearchService
 from gif.app.services.check import CheckService
 
 app = FastAPI(title="gif")
+logger = logging.getLogger("gif")
 register_error_handlers(app)
 
 giphy_client = GiphyHttpClient()
@@ -27,6 +28,7 @@ gif_cache = MemoryGifCache()
 
 search_service = SearchService(giphy=giphy_client, cache=gif_cache)
 check_service = CheckService(cdn=cdn_client, cache=gif_cache)
+setup_observability(app, service="gif")
 
 
 class GifDTO(BaseModel):
