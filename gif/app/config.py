@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     CACHE_TTL_SEARCH: int = 300
     CACHE_TTL_CHECK: int = 3600
     DEFAULT_LIMIT: int = 20
+    REDIS_URL: str = "redis://localhost:6379/0"
     ALLOWED_HOSTS: list[str] = [
         "localhost",
         "giphy-stub",

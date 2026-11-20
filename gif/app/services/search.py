@@ -1,6 +1,8 @@
 import json
 import logging
 
+from kokogram_shared import AppError, ValidationReason
+
 from gif.app.config import settings
 from gif.app.ports.cache import GifCache
 from gif.app.ports.giphy import GiphyClient
@@ -19,6 +21,7 @@ class SearchService:
         result = []
         for item in raw_data:
             images = item.get("images", {})
+            gif_id = item.get("id")
 
             variants = []
             for variant_name, variant_data in images.items():
@@ -31,8 +34,10 @@ class SearchService:
                     continue
 
             selected = self.selector.select(variants)
-            if selected:
-                result.append({"send_url": selected.send_url, "preview_url": selected.preview_url})
+            if selected and gif_id:
+                result.append(
+                    {"id": gif_id, "url": selected.send_url, "preview_url": selected.preview_url}
+                )
         return result
 
     async def _get_gifs(self, q: str | None, limit: int) -> list[dict]:
@@ -47,23 +52,25 @@ class SearchService:
         logger.info("cache_miss", extra={"key": cache_key})
 
         try:
+            logger.info("giphy_request", extra={"q": norm_q, "limit": limit})
             if norm_q:
                 raw_data = await self.giphy.search(norm_q, limit)
             else:
                 raw_data = await self.giphy.trending(limit)
-            logger.info("giphy_request", extra={"q": norm_q, "limit": limit})
-        except Exception as e:
-            logger.error("giphy_unavailable", extra={"error": str(e)})
+        except AppError:
+            logger.error("giphy_unavailable", extra={"q": norm_q})
             raise
 
         result = self._map_giphy_response(raw_data)
 
         await self.cache.set(cache_key, json.dumps(result), settings.CACHE_TTL_SEARCH)
+        for gif in result:
+            await self.cache.set(f"check:{gif['url']}", "valid", settings.CACHE_TTL_CHECK)
         return result
 
     async def search(self, q: str) -> list[dict]:
         if len(q) > 20:
-            raise ValueError("query_too_long")
+            raise AppError.validation(ValidationReason.QUERY_TOO_LONG, field="q")
         return await self._get_gifs(q, settings.DEFAULT_LIMIT)
 
     async def trending(self) -> list[dict]:

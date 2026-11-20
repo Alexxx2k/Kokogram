@@ -1,7 +1,8 @@
 import logging
 
+from kokogram_shared import AppError
+
 from gif.app.config import settings
-from gif.app.exceptions import GifUnavailableError
 from gif.app.ports.cache import GifCache
 from gif.app.ports.cdn import CdnClient
 from gif.app.services.url_validator import validate_url
@@ -29,12 +30,13 @@ class CheckService:
         logger.info("cdn_request", extra={"url": url})
         try:
             content_length = await self.cdn.get_content_length(url)
-        except GifUnavailableError:
+        except AppError:
             logger.error("cdn_unavailable", extra={"url": url})
             raise
 
         if content_length is None:
             return {"valid": False, "reason": "size_unknown"}
+
         if content_length > 50 * 1024 * 1024:
             logger.warning("file_too_large", extra={"url": url, "size": content_length})
             return {"valid": False, "reason": "file_too_large"}

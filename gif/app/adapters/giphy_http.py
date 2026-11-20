@@ -1,7 +1,7 @@
 import httpx
+from kokogram_shared import AppError, ErrorCode
 
 from gif.app.config import settings
-from gif.app.exceptions import GifUnavailableError
 
 
 class GiphyHttpClient:
@@ -15,8 +15,8 @@ class GiphyHttpClient:
             resp = await self.client.get(path, params=params)
             resp.raise_for_status()
             return resp.json().get("data", [])
-        except (httpx.TimeoutException, httpx.HTTPStatusError):
-            raise GifUnavailableError()
+        except (httpx.TimeoutException, httpx.HTTPStatusError, httpx.RequestError):
+            raise AppError(ErrorCode.GIF_UNAVAILABLE)
 
     async def search(self, q: str, limit: int) -> list[dict]:
         return await self._get("/v1/gifs/search", {"q": q, "limit": limit})

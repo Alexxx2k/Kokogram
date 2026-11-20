@@ -1,6 +1,5 @@
 import httpx
-
-from gif.app.exceptions import GifUnavailableError
+from kokogram_shared import AppError, ErrorCode
 
 
 class CdnHttpClient:
@@ -13,5 +12,5 @@ class CdnHttpClient:
             resp.raise_for_status()
             length = resp.headers.get("Content-Length")
             return int(length) if length else None
-        except (httpx.TimeoutException, httpx.HTTPStatusError):
-            raise GifUnavailableError()
+        except (httpx.TimeoutException, httpx.HTTPStatusError, httpx.RequestError):
+            raise AppError(ErrorCode.GIF_UNAVAILABLE)
