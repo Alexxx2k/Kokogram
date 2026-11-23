@@ -1,10 +1,55 @@
+import os
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from kokogram_shared.fastapi_handlers import register_error_handlers
+from kokogram_shared.fastapi_middleware import setup_observability
 
-app = FastAPI(title="presence")
+from presence.app.api.dependencies import (
+    close_redis_client,
+    get_clock,
+    get_connection_service,
+    get_gateway_client,
+    get_presence_config,
+    get_presence_store,
+    get_redis_client,
+)
+from presence.app.api.router import router as presence_router
+from presence.app.services.expiration_watcher import ExpirationWatcher
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    config = get_presence_config()
+    clock = get_clock()
+    redis = get_redis_client(config)
+    store = get_presence_store(config, redis, clock)
+    gateway_client = get_gateway_client(config)
+    service = get_connection_service(store, gateway_client, clock, config)
+
+    watcher: ExpirationWatcher | None = None
+    enable_watcher = os.getenv("ENABLE_EXPIRATION_WATCHER", "true").lower() in ("true", "1")
+    if enable_watcher:
+        watcher = ExpirationWatcher(connection_service=service, interval_seconds=1.0)
+        watcher.start()
+
+    yield
+
+    if watcher is not None:
+        await watcher.stop()
+
+    await close_redis_client()
+
+
+app = FastAPI(title="presence", lifespan=lifespan)
+setup_observability(app, service="presence")
 register_error_handlers(app)
 
 
 @app.get("/health")
-def health() -> dict:
+def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+app.include_router(presence_router)
