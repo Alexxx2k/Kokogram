@@ -1,10 +1,9 @@
-from kokogram_shared import Clock
+from kokogram_shared import Clock, SystemClock
 
 
 class MemoryGifCache:
     def __init__(self, clock: Clock | None = None):
-
-        self._clock = clock
+        self._clock = clock or SystemClock()
         self._cache: dict[str, tuple[str, float]] = {}
 
     async def get(self, key: str) -> str | None:
