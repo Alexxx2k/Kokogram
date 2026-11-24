@@ -22,3 +22,15 @@ class Session:
     token_hash: str = field(repr=False)
     expires_at: datetime
     created_at: datetime
+
+
+@dataclass(frozen=True)
+class SessionToken:
+    token: str = field(repr=False)
+    expires_at: datetime
+
+
+@dataclass(frozen=True)
+class LoginResult:
+    user: User
+    session: SessionToken

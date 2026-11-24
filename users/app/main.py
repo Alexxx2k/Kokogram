@@ -7,6 +7,7 @@ from kokogram_shared.fastapi_middleware import setup_observability
 
 from app.adapters.database import Database
 from app.api.auth import router as auth_router
+from app.api.internal import router as internal_router
 from app.config import Settings
 
 
@@ -24,6 +25,7 @@ app = FastAPI(title="users", lifespan=lifespan)
 setup_observability(app, service="users")
 register_error_handlers(app)
 app.include_router(auth_router)
+app.include_router(internal_router)
 
 
 @app.get("/health")
