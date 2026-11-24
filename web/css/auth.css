@@ -46,20 +46,56 @@ body {
 .app-brand {
   text-align: center;
   margin-bottom: 28px;
+  position: relative;
 }
 
 .brand-title {
-  font-size: 26px;
-  font-weight: 800;
-  letter-spacing: 2px;
-  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  font-family: 'Press Start 2P', var(--font-mono);
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: 1px;
+  line-height: 1.4;
   color: var(--cyan);
-  text-shadow: 0 0 10px var(--cyan-glow), 0 0 20px rgba(0, 240, 255, 0.2);
+  text-shadow:
+    3px 1px 0 var(--pink),
+    -1px 0 0 rgba(255, 0, 127, 0.65),
+    0 0 14px rgba(0, 240, 255, 0.55);
+  position: relative;
+  padding: 4px 8px;
 }
 
-.brand-title .brand-accent {
-  color: var(--pink);
-  text-shadow: 0 0 10px var(--pink-glow), 0 0 20px rgba(255, 0, 127, 0.2);
+.brand-title::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 2px,
+    rgba(8, 5, 18, 0.35) 2px,
+    rgba(8, 5, 18, 0.35) 4px
+  );
+}
+
+.brand-star {
+  font-size: 18px;
+  line-height: 1;
+}
+
+@media (max-width: 640px) {
+  .brand-title {
+    font-size: 13px;
+    gap: 8px;
+  }
+
+  .brand-star {
+    font-size: 12px;
+  }
 }
 
 .brand-subtitle {
