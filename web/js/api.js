@@ -454,10 +454,10 @@ export async function request(endpoint, options = {}) {
   let response;
   try {
     response = await fetch(urlPath, {
+      ...options,
       method,
       headers,
       body,
-      ...options,
     });
   } catch (networkErr) {
     throw new ApiError(503, {
