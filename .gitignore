@@ -14,3 +14,7 @@ htmlcov/
 # Editors
 .vscode/
 .idea/
+
+# Scratch & temp
+scratch/
+
