@@ -118,7 +118,7 @@ const INITIAL_MOCK_USERS = [
   },
   {
     id: '22222222-2222-4222-8222-222222222222',
-    username: 'maisha_sob',
+    username: 'misha_sob',
     email: 'misha@mail.ru',
     phone: '+79990001122',
     password: 'misha123',

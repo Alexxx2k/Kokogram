@@ -2,9 +2,166 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Kokogram</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kokogram // Secure Messenger</title>
+  <link rel="stylesheet" href="css/auth.css">
 </head>
 <body>
-  <h1>Kokogram</h1>
+
+  <!-- App Header / Branding -->
+  <header class="app-brand">
+    <div class="brand-title">KOKOGRAM <span class="brand-accent">// COCK or GLAM</span></div>
+    <div class="brand-subtitle">SECURE MESSENGER • v1.0</div>
+  </header>
+
+  <!-- SCREEN 1: Вход в систему -->
+  <main id="view-login" class="view-container is-active">
+    <div class="auth-card theme-cyan">
+      <div class="card-header">
+        <h2 class="card-title">ВХОД В СИСТЕМУ</h2>
+      </div>
+
+      <div id="login-alert" class="form-alert" role="alert"></div>
+
+      <form id="form-login" novalidate>
+        <div class="form-group">
+          <label for="login-identifier" class="form-label">ПОЧТА ИЛИ ТЕЛЕФОН *</label>
+          <input
+            type="text"
+            id="login-identifier"
+            class="form-input"
+            autocomplete="username"
+            placeholder="+79991234567 или user@mail.ru"
+            required
+          >
+          <div id="err-login-user" class="field-error"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="login-password" class="form-label">ПАРОЛЬ *</label>
+          <input
+            type="password"
+            id="login-password"
+            class="form-input"
+            autocomplete="current-password"
+            placeholder="••••••••"
+            required
+          >
+          <div id="err-login-pass" class="field-error"></div>
+        </div>
+
+        <div class="card-actions">
+          <button type="submit" id="btn-login-submit" class="btn btn-cyan">ВОЙТИ</button>
+          <a href="#" id="link-to-register" class="auth-switch-link">Нет аккаунта? Регистрация →</a>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <!-- SCREEN 1 (Alternate): Регистрация -->
+  <main id="view-register" class="view-container">
+    <div class="auth-card theme-pink">
+      <div class="card-header">
+        <h2 class="card-title">РЕГИСТРАЦИЯ</h2>
+      </div>
+
+      <div id="register-alert" class="form-alert" role="alert"></div>
+
+      <form id="form-register" novalidate>
+        <div class="form-group">
+          <label for="reg-username" class="form-label">USERNAME *</label>
+          <input
+            type="text"
+            id="reg-username"
+            class="form-input"
+            autocomplete="username"
+            placeholder="alex_psarev"
+            required
+          >
+          <div id="err-reg-username" class="field-error"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="reg-contact" class="form-label">ПОЧТА ИЛИ ТЕЛЕФОН *</label>
+          <input
+            type="text"
+            id="reg-contact"
+            class="form-input"
+            placeholder="ivan@mail.ru или +79991234567"
+            required
+          >
+          <div id="err-reg-contact" class="field-error"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="reg-password" class="form-label">ПАРОЛЬ *</label>
+          <input
+            type="password"
+            id="reg-password"
+            class="form-input"
+            autocomplete="new-password"
+            placeholder="••••••••"
+            required
+          >
+          <div id="err-reg-pass" class="field-error"></div>
+        </div>
+
+        <div class="card-actions">
+          <button type="submit" id="btn-reg-submit" class="btn btn-pink">ЗАРЕГИСТРИРОВАТЬСЯ</button>
+          <a href="#" id="link-to-login" class="auth-switch-link">← Уже есть аккаунт? Войти</a>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <!-- SCREEN 4: Заглушка профиля (авторизованная зона) -->
+  <main id="view-profile" class="view-container">
+    <div class="auth-card theme-cyan">
+      <div class="card-header">
+        <h2 class="card-title">МОЙ ПРОФИЛЬ</h2>
+      </div>
+
+      <div class="profile-top-row">
+        <div id="profile-avatar" class="profile-avatar-box">AP</div>
+        <div class="profile-meta">
+          <div id="profile-username" class="profile-username">@alex_psarev</div>
+          <div class="profile-status-badge">
+            <span class="status-dot"></span>
+            <span>ONLINE</span>
+          </div>
+          <div id="profile-status" class="profile-status-text" style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">
+            Делаем жучий свэг 🕷
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="profile-input-username" class="form-label">USERNAME (3-12 СИМВ., ЛАТИНИЦА, ЦИФРЫ, «_»)</label>
+        <input
+          type="text"
+          id="profile-input-username"
+          class="form-input"
+          readonly
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="profile-input-status" class="form-label">СТАТУС (ДО 20 СИМВОЛОВ)</label>
+        <input
+          type="text"
+          id="profile-input-status"
+          class="form-input"
+          readonly
+        >
+      </div>
+
+      <div class="card-actions" style="justify-content: flex-end;">
+        <button type="button" id="btn-logout" class="btn btn-red">ВЫЙТИ</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Bootstrap Script (ES-module) -->
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>
