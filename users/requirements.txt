@@ -3,4 +3,6 @@ uvicorn==0.51.0
 httpx==0.28.1
 sqlalchemy[asyncio]==2.1.6
 psycopg[binary]==3.3.6
+bcrypt==5.0.0
+email-validator==2.3.0
 -e ../shared[fastapi]

@@ -6,6 +6,7 @@ from kokogram_shared.fastapi_handlers import register_error_handlers
 from kokogram_shared.fastapi_middleware import setup_observability
 
 from app.adapters.database import Database
+from app.api.auth import router as auth_router
 from app.config import Settings
 
 
@@ -22,6 +23,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(title="users", lifespan=lifespan)
 setup_observability(app, service="users")
 register_error_handlers(app)
+app.include_router(auth_router)
 
 
 @app.get("/health")

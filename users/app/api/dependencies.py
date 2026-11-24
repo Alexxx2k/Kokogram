@@ -14,11 +14,14 @@ from kokogram_shared import (
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.adapters.database import translate_database_errors
+from app.adapters.password_hasher import BcryptPasswordHasher
 from app.adapters.session_repository import SqlAlchemySessionRepository
 from app.adapters.user_repository import SqlAlchemyUserRepository
 from app.config import Settings
+from app.ports.password_hasher import PasswordHasher
 from app.ports.session_repository import SessionRepository
 from app.ports.user_repository import UserRepository
+from app.services.auth import AuthService
 
 
 def get_settings() -> Settings:
@@ -53,6 +56,19 @@ def get_id_generator() -> IdGenerator:
 
 def get_token_generator() -> TokenGenerator:
     return SecretsTokenGenerator()
+
+
+def get_password_hasher() -> PasswordHasher:
+    return BcryptPasswordHasher()
+
+
+def get_auth_service(
+    users: Annotated[UserRepository, Depends(get_user_repository)],
+    password_hasher: Annotated[PasswordHasher, Depends(get_password_hasher)],
+    clock: Annotated[Clock, Depends(get_clock)],
+    id_generator: Annotated[IdGenerator, Depends(get_id_generator)],
+) -> AuthService:
+    return AuthService(users, password_hasher, clock, id_generator)
 
 
 def get_url_signer(
