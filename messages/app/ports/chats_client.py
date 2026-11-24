@@ -1,0 +1,6 @@
+from typing import Protocol
+
+
+class ChatsClient(Protocol):
+    async def check_membership(self, chat_id: str, user_id: str) -> bool: ...
+    async def update_last_read(self, chat_id: str, user_id: str) -> None: ...
