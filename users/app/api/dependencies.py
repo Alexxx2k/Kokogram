@@ -1,6 +1,7 @@
+from collections.abc import AsyncIterator
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, Request
 from kokogram_shared import (
     Clock,
     IdGenerator,
@@ -10,12 +11,36 @@ from kokogram_shared import (
     UrlSigner,
     UuidGenerator,
 )
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.adapters.database import translate_database_errors
+from app.adapters.session_repository import SqlAlchemySessionRepository
+from app.adapters.user_repository import SqlAlchemyUserRepository
 from app.config import Settings
+from app.ports.session_repository import SessionRepository
+from app.ports.user_repository import UserRepository
 
 
 def get_settings() -> Settings:
     return Settings.from_env()
+
+
+async def get_database_session(request: Request) -> AsyncIterator[AsyncSession]:
+    with translate_database_errors():
+        async with request.app.state.database.sessions() as session, session.begin():
+            yield session
+
+
+def get_user_repository(
+    session: Annotated[AsyncSession, Depends(get_database_session, scope="function")],
+) -> UserRepository:
+    return SqlAlchemyUserRepository(session)
+
+
+def get_session_repository(
+    session: Annotated[AsyncSession, Depends(get_database_session, scope="function")],
+) -> SessionRepository:
+    return SqlAlchemySessionRepository(session)
 
 
 def get_clock() -> Clock:

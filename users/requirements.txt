@@ -1,4 +1,6 @@
 fastapi==0.136.3
 uvicorn==0.51.0
 httpx==0.28.1
+sqlalchemy[asyncio]==2.1.6
+psycopg[binary]==3.3.6
 -e ../shared[fastapi]
