@@ -129,43 +129,145 @@ export function initAuthView() {
   }
 
   /* ==========================================================================
-     Client-side Validation Helpers
+     Validation Reason Mapping & Client-side Validation Helpers (HLD §4.1)
      ========================================================================== */
+
+  const VALIDATION_MAP = {
+    username_required: {
+      target: 'username',
+      message: 'Ошибка (username_required): Поле обязательно для заполнения',
+    },
+    username_length: {
+      target: 'username',
+      message: 'Ошибка (username_length): Длина 3–12 символов; латиница, цифры, «_»',
+    },
+    username_format: {
+      target: 'username',
+      message: 'Ошибка (username_format): Допустимы только латиница, цифры, «_»',
+    },
+    password_length: {
+      target: 'password',
+      message: 'Ошибка (password_length): Длина пароля от 6 до 12 символов',
+    },
+    password_composition: {
+      target: 'password',
+      message: 'Ошибка (password_composition): 6–12 символов, буквы и цифры',
+    },
+    invalid_email: {
+      target: 'contact',
+      message: 'Ошибка (invalid_email): Некорректный адрес электронной почты',
+    },
+    invalid_phone: {
+      target: 'contact',
+      message: 'Ошибка (invalid_phone): Некорректный формат телефона (например, +79991234567 или 89991234567)',
+    },
+    contact_required: {
+      target: 'contact',
+      message: 'Ошибка (contact_required): Введите адрес почты или номер телефона',
+    },
+  };
+
+  function formatValidationReasons(reasons) {
+    const messages = new Set();
+    for (const reason of reasons) {
+      const mapped = VALIDATION_MAP[reason];
+      if (mapped) {
+        messages.add(mapped.message);
+      }
+    }
+    return [...messages].join('\n');
+  }
+
+  function applyServerValidationError(err) {
+    const fieldMessages = {
+      username: new Set(),
+      contact: new Set(),
+      password: new Set(),
+    };
+    const unmappedMessages = new Set();
+
+    for (const d of err.details || []) {
+      const reason = d?.reason;
+      const field = d?.field;
+      const mapped = reason ? VALIDATION_MAP[reason] : null;
+
+      if (mapped) {
+        fieldMessages[mapped.target].add(mapped.message);
+        continue;
+      }
+
+      const fallbackMsg = reason
+        ? `Ошибка (${reason}): ${err.message}`
+        : `Ошибка (validation_error): ${err.message}`;
+
+      if (field === 'username') {
+        fieldMessages.username.add(fallbackMsg);
+      } else if (field === 'password') {
+        fieldMessages.password.add(fallbackMsg);
+      } else if (field === 'email' || field === 'phone' || field === 'login') {
+        fieldMessages.contact.add(fallbackMsg);
+      } else {
+        unmappedMessages.add(fallbackMsg);
+      }
+    }
+
+    let handledAny = false;
+    if (fieldMessages.username.size > 0) {
+      setFieldError(inputRegUsername, errRegUsername, [...fieldMessages.username].join('\n'));
+      handledAny = true;
+    }
+    if (fieldMessages.contact.size > 0) {
+      setFieldError(inputRegContact, errRegContact, [...fieldMessages.contact].join('\n'));
+      handledAny = true;
+    }
+    if (fieldMessages.password.size > 0) {
+      setFieldError(inputRegPass, errRegPass, [...fieldMessages.password].join('\n'));
+      handledAny = true;
+    }
+
+    if (unmappedMessages.size > 0) {
+      setFormAlert(alertRegister, [...unmappedMessages].join('\n'));
+    } else if (!handledAny) {
+      setFormAlert(alertRegister, `Ошибка (${err.code}): ${err.message}`);
+    }
+  }
 
   function validateUsername(val) {
     const clean = (val || '').trim();
-    if (!clean) return 'Длина 3–12 символов; латиница, цифры, «_»';
-    if (clean.length < 3 || clean.length > 12) return 'Длина 3–12 символов; латиница, цифры, «_»';
-    if (!/^[a-zA-Z0-9_]+$/.test(clean)) return 'Длина 3–12 символов; латиница, цифры, «_»';
-    return null;
+    if (!clean) return ['username_required'];
+    const reasons = [];
+    if (clean.length < 3 || clean.length > 12) reasons.push('username_length');
+    if (!/^[a-zA-Z0-9_]+$/.test(clean)) reasons.push('username_format');
+    return reasons;
   }
 
   function validatePassword(val) {
-    if (!val) return '6–12 символов, буквы и цифры';
-    if (val.length < 6 || val.length > 12) return '6–12 символов, буквы и цифры';
+    if (!val) return ['password_length'];
+    const reasons = [];
+    if (val.length < 6 || val.length > 12) reasons.push('password_length');
     const hasLetter = /[a-zA-Zа-яА-ЯёЁ]/.test(val);
     const hasDigit = /\d/.test(val);
-    if (!hasLetter || !hasDigit) return '6–12 символов, буквы и цифры';
-    return null;
+    if (!hasLetter || !hasDigit) reasons.push('password_composition');
+    return reasons;
   }
 
   function validateContact(val) {
     const clean = (val || '').trim();
-    if (!clean) return 'Введите адрес почты или номер телефона';
+    if (!clean) return ['contact_required'];
     if (clean.includes('@')) {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) {
-        return 'Некорректный адрес электронной почты';
+        return ['invalid_email'];
       }
     } else {
       if (!/^\+?[\d\s\-()]+$/.test(clean)) {
-        return 'Некорректный формат телефона (например, +79991234567)';
+        return ['invalid_phone'];
       }
       const digits = clean.replace(/\D/g, '');
       if (digits.length !== 11 || !(digits.startsWith('7') || digits.startsWith('8'))) {
-        return 'Некорректный формат телефона (например, +79991234567 или 89991234567)';
+        return ['invalid_phone'];
       }
     }
-    return null;
+    return [];
   }
 
   /* ==========================================================================
@@ -247,21 +349,21 @@ export function initAuthView() {
 
       let hasClientError = false;
 
-      const userErr = validateUsername(username);
-      if (userErr) {
-        setFieldError(inputRegUsername, errRegUsername, `Ошибка (username_length): ${userErr}`);
+      const userReasons = validateUsername(username);
+      if (userReasons.length > 0) {
+        setFieldError(inputRegUsername, errRegUsername, formatValidationReasons(userReasons));
         hasClientError = true;
       }
 
-      const contactErr = validateContact(contact);
-      if (contactErr) {
-        setFieldError(inputRegContact, errRegContact, `Ошибка: ${contactErr}`);
+      const contactReasons = validateContact(contact);
+      if (contactReasons.length > 0) {
+        setFieldError(inputRegContact, errRegContact, formatValidationReasons(contactReasons));
         hasClientError = true;
       }
 
-      const passErr = validatePassword(password);
-      if (passErr) {
-        setFieldError(inputRegPass, errRegPass, `Ошибка (password_composition): ${passErr}`);
+      const passReasons = validatePassword(password);
+      if (passReasons.length > 0) {
+        setFieldError(inputRegPass, errRegPass, formatValidationReasons(passReasons));
         hasClientError = true;
       }
 
@@ -288,23 +390,7 @@ export function initAuthView() {
           } else if (err.code === 'phone_taken') {
             setFieldError(inputRegContact, errRegContact, 'Ошибка 409 (phone_taken): Номер телефона уже зарегистрирован');
           } else if (err.code === 'validation_error') {
-            // Map details to fields
-            let handledDetail = false;
-            err.details.forEach((d) => {
-              if (d.field === 'username') {
-                setFieldError(inputRegUsername, errRegUsername, 'Ошибка (username_length): Длина 3–12 символов; латиница, цифры, «_»');
-                handledDetail = true;
-              } else if (d.field === 'password') {
-                setFieldError(inputRegPass, errRegPass, 'Ошибка (password_composition): 6–12 символов, буквы и цифры');
-                handledDetail = true;
-              } else if (d.field === 'email' || d.field === 'phone' || d.field === 'login') {
-                setFieldError(inputRegContact, errRegContact, 'Ошибка: Введите корректный адрес почты или номер телефона');
-                handledDetail = true;
-              }
-            });
-            if (!handledDetail) {
-              setFormAlert(alertRegister, `Ошибка (${err.code}): ${err.message}`);
-            }
+            applyServerValidationError(err);
           } else {
             setFormAlert(alertRegister, `Ошибка (${err.code}): ${err.message}`);
           }
