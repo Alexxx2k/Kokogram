@@ -58,6 +58,11 @@ export function initAuthView() {
      Screen Switching
      ========================================================================== */
 
+  function resetAuthForms() {
+    if (formLogin) formLogin.reset();
+    if (formRegister) formRegister.reset();
+  }
+
   function showScreen(screen) {
     currentScreen = screen;
     clearAllErrors();
@@ -278,6 +283,7 @@ export function initAuthView() {
   if (linkToRegister) {
     linkToRegister.addEventListener('click', (e) => {
       e.preventDefault();
+      if (formLogin) formLogin.reset();
       showScreen('register');
     });
   }
@@ -286,6 +292,7 @@ export function initAuthView() {
   if (linkToLogin) {
     linkToLogin.addEventListener('click', (e) => {
       e.preventDefault();
+      if (formRegister) formRegister.reset();
       showScreen('login');
     });
   }
@@ -317,6 +324,7 @@ export function initAuthView() {
         }
 
         await authService.login(login, password);
+        resetAuthForms();
         // On success auth state change listener automatically triggers showScreen('profile')
       } catch (err) {
         if (err instanceof ApiError) {
@@ -380,6 +388,7 @@ export function initAuthView() {
           login: contact,
           password,
         });
+        resetAuthForms();
         // Success automatically triggers auto-login and transitions to profile
       } catch (err) {
         if (err instanceof ApiError) {
@@ -414,6 +423,7 @@ export function initAuthView() {
         btnLogout.textContent = 'Выход...';
         await authService.logout();
       } finally {
+        resetAuthForms();
         btnLogout.disabled = false;
         btnLogout.textContent = 'Выйти';
         // Auth observer will transition to login
@@ -424,9 +434,11 @@ export function initAuthView() {
   // Subscribe to auth state updates (called synchronously with current state)
   authService.onAuthStateChanged((user, isAuth) => {
     if (isAuth && user) {
+      resetAuthForms();
       renderProfile(user);
       showScreen('profile');
     } else {
+      resetAuthForms();
       showScreen('login');
     }
   });
