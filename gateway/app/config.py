@@ -10,6 +10,7 @@ class GatewayConfig:
     chats_service_url: str = "http://chats:8000"
     messages_service_url: str = "http://messages:8000"
     gif_service_url: str = "http://gif:8000"
+    presence_service_url: str = "http://presence:8000"
     ssl_certfile: str | None = None
     ssl_keyfile: str | None = None
 
@@ -20,6 +21,7 @@ class GatewayConfig:
             chats_service_url=os.getenv("CHATS_SERVICE_URL", "http://chats:8000"),
             messages_service_url=os.getenv("MESSAGES_SERVICE_URL", "http://messages:8000"),
             gif_service_url=os.getenv("GIF_SERVICE_URL", "http://gif:8000"),
+            presence_service_url=os.getenv("PRESENCE_SERVICE_URL", "http://presence:8000"),
             ssl_certfile=os.getenv("SSL_CERTFILE") or os.getenv("SSL_CERT_PATH"),
             ssl_keyfile=os.getenv("SSL_KEYFILE") or os.getenv("SSL_KEY_PATH"),
         )
