@@ -221,10 +221,9 @@ async function handleMockRequest(method, path, body, headers = {}) {
     // F_Auth_1, F_Auth_2, F_Auth_12: email or phone
     const normEmail = normalizeEmail(email);
     const normPhone = normalizePhone(phone);
+    const missingContact = !normEmail && !normPhone;
 
-    if (!normEmail && !normPhone) {
-      validationDetails.push({ field: 'login', reason: 'contact_required' });
-    } else {
+    if (!missingContact) {
       if (normEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normEmail)) {
         validationDetails.push({ field: 'email', reason: 'invalid_email' });
       }
@@ -233,11 +232,14 @@ async function handleMockRequest(method, path, body, headers = {}) {
       }
     }
 
-    if (validationDetails.length > 0) {
+    if (validationDetails.length > 0 || missingContact) {
       throw new ApiError(422, {
         error: {
           code: 'validation_error',
-          message: 'Некорректные данные',
+          message:
+            missingContact && validationDetails.length === 0
+              ? 'Укажите email или номер телефона'
+              : 'Некорректные данные',
           details: validationDetails,
         },
       });

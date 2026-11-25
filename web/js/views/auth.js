@@ -166,10 +166,6 @@ export function initAuthView() {
       target: 'contact',
       message: 'Ошибка (invalid_phone): Некорректный формат телефона (например, +79991234567 или 89991234567)',
     },
-    contact_required: {
-      target: 'contact',
-      message: 'Ошибка (contact_required): Введите адрес почты или номер телефона',
-    },
   };
 
   function formatValidationReasons(reasons) {
@@ -209,7 +205,7 @@ export function initAuthView() {
         fieldMessages.username.add(fallbackMsg);
       } else if (field === 'password') {
         fieldMessages.password.add(fallbackMsg);
-      } else if (field === 'email' || field === 'phone' || field === 'login') {
+      } else if (field === 'email' || field === 'phone') {
         fieldMessages.contact.add(fallbackMsg);
       } else {
         unmappedMessages.add(fallbackMsg);
@@ -258,7 +254,7 @@ export function initAuthView() {
 
   function validateContact(val) {
     const clean = (val || '').trim();
-    if (!clean) return ['contact_required'];
+    if (!clean) return [];
     if (clean.includes('@')) {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) {
         return ['invalid_email'];
@@ -363,10 +359,15 @@ export function initAuthView() {
         hasClientError = true;
       }
 
-      const contactReasons = validateContact(contact);
-      if (contactReasons.length > 0) {
-        setFieldError(inputRegContact, errRegContact, formatValidationReasons(contactReasons));
+      if (!contact) {
+        setFieldError(inputRegContact, errRegContact, 'Введите адрес почты или номер телефона');
         hasClientError = true;
+      } else {
+        const contactReasons = validateContact(contact);
+        if (contactReasons.length > 0) {
+          setFieldError(inputRegContact, errRegContact, formatValidationReasons(contactReasons));
+          hasClientError = true;
+        }
       }
 
       const passReasons = validatePassword(password);
