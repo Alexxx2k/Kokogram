@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 from uuid import UUID
 
@@ -6,6 +7,8 @@ from kokogram_shared.errors import AppError, ErrorCode
 
 from presence.app.ports.gateway_client import GatewayClient, WsDelivery
 from presence.app.ports.presence_store import PresenceStore
+
+logger = logging.getLogger(__name__)
 
 
 class ConnectionService:
@@ -42,6 +45,9 @@ class ConnectionService:
     async def update_subscriptions(
         self, connection_id: str, add: list[UUID], remove: list[UUID]
     ) -> dict[UUID, bool]:
+        if not await self._store.connection_exists(connection_id):
+            raise AppError(ErrorCode.NOT_FOUND, "Соединение не найдено")
+
         if remove:
             await self._store.remove_subscriptions(connection_id, remove)
 
@@ -57,7 +63,14 @@ class ConnectionService:
         for conn_id in expired_conn_ids:
             user_id, is_last = await self._store.remove_connection(conn_id)
             if user_id is not None and is_last:
-                await self._notify_subscribers(user_id=user_id, online=False)
+                try:
+                    await self._notify_subscribers(user_id=user_id, online=False)
+                except Exception as exc:
+                    logger.warning(
+                        "Не удалось отправить status_changed при истечении %s: %s",
+                        conn_id,
+                        exc,
+                    )
         return expired_conn_ids
 
     async def _notify_subscribers(self, user_id: UUID, online: bool) -> None:

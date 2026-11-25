@@ -70,6 +70,15 @@ class InMemoryPresenceStore:
 
         return user_id, is_last
 
+    async def connection_exists(self, connection_id: str) -> bool:
+        if connection_id not in self._connections:
+            return False
+        if self._clock is not None:
+            now_ts = self._clock.now().timestamp()
+            if self._expirations.get(connection_id, 0.0) <= now_ts:
+                return False
+        return True
+
     async def ping_connection(self, connection_id: str, expires_at: datetime) -> bool:
         conn_data = self._connections.get(connection_id)
         if conn_data is None:
@@ -78,7 +87,6 @@ class InMemoryPresenceStore:
         if self._clock is not None:
             now_ts = self._clock.now().timestamp()
             if self._expirations.get(connection_id, 0.0) <= now_ts:
-                await self.remove_connection(connection_id)
                 return False
 
         user_id, _ = conn_data

@@ -37,7 +37,7 @@ class RedisPresenceStore:
 
         async with self._redis.pipeline(transaction=True) as pipe:
             pipe.set(self._conn_key(connection_id), str(user_id), ex=ttl)
-            pipe.set(self._conn_user_key(connection_id), str(user_id), ex=ttl + 300)
+            pipe.set(self._conn_user_key(connection_id), str(user_id))
             pipe.sadd(user_key, connection_id)
             pipe.scard(user_key)
             pipe.zadd(self._expirations_key, {connection_id: expires_at.timestamp()})
@@ -88,21 +88,27 @@ class RedisPresenceStore:
             pipe.scard(user_key)
             results = await pipe.execute()
 
+        srem_removed = results[2]
         remaining_conns = results[4]
-        is_last = remaining_conns == 0
+        is_last = srem_removed == 1 and remaining_conns == 0
         return user_id, is_last
 
+    async def connection_exists(self, connection_id: str) -> bool:
+        now_ts = self._clock.now().timestamp()
+        async with self._redis.pipeline(transaction=False) as pipe:
+            pipe.exists(self._conn_key(connection_id))
+            pipe.zscore(self._expirations_key, connection_id)
+            exists_raw, score = await pipe.execute()
+        return bool(exists_raw) and score is not None and score > now_ts
+
     async def ping_connection(self, connection_id: str, expires_at: datetime) -> bool:
-        conn_key = self._conn_key(connection_id)
-        exists = await self._redis.exists(conn_key)
-        if not exists:
+        if not await self.connection_exists(connection_id):
             return False
 
         ttl = max(1, int((expires_at - self._clock.now()).total_seconds()))
 
         async with self._redis.pipeline(transaction=True) as pipe:
-            pipe.expire(conn_key, ttl)
-            pipe.expire(self._conn_user_key(connection_id), ttl + 300)
+            pipe.expire(self._conn_key(connection_id), ttl)
             pipe.zadd(self._expirations_key, {connection_id: expires_at.timestamp()})
             await pipe.execute()
 

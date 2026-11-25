@@ -1,5 +1,6 @@
 from typing import Annotated
 
+import httpx
 from fastapi import Depends
 from kokogram_shared.clock import Clock, SystemClock
 from redis.asyncio import Redis
@@ -16,6 +17,7 @@ from presence.app.services.connection_service import ConnectionService
 _in_memory_store = InMemoryPresenceStore()
 _in_memory_gateway_client = InMemoryGatewayClient()
 _redis_client: Redis | None = None
+_http_client: httpx.AsyncClient | None = None
 
 
 def get_presence_config() -> PresenceConfig:
@@ -40,8 +42,10 @@ def get_redis_client(
 async def close_redis_client() -> None:
     global _redis_client
     if _redis_client is not None:
-        await _redis_client.aclose()
-        _redis_client = None
+        try:
+            await _redis_client.aclose()
+        finally:
+            _redis_client = None
 
 
 def get_presence_store(
@@ -55,12 +59,30 @@ def get_presence_store(
     return RedisPresenceStore(redis, clock=clock)
 
 
+def get_http_client() -> httpx.AsyncClient:
+    global _http_client
+    if _http_client is None or _http_client.is_closed:
+        _http_client = httpx.AsyncClient(timeout=httpx.Timeout(5.0))
+    return _http_client
+
+
+async def close_http_client() -> None:
+    global _http_client
+    if _http_client is not None:
+        try:
+            if not _http_client.is_closed:
+                await _http_client.aclose()
+        finally:
+            _http_client = None
+
+
 def get_gateway_client(
     config: Annotated[PresenceConfig, Depends(get_presence_config)],
+    http_client: Annotated[httpx.AsyncClient, Depends(get_http_client)],
 ) -> GatewayClient:
     if config.use_mock_gateway:
         return _in_memory_gateway_client
-    return HttpGatewayClient(base_url=config.gateway_url)
+    return HttpGatewayClient(base_url=config.gateway_url, client=http_client)
 
 
 def get_connection_service(
