@@ -123,7 +123,7 @@ export function initAuthView() {
     if (profileUsername) profileUsername.textContent = `@${user.username}`;
     if (profileInputUser) profileInputUser.value = user.username;
 
-    const statusText = user.status || 'Делаем жучий свэг 🕷';
+    const statusText = user.status || '';
     if (profileStatus) profileStatus.textContent = statusText;
     if (profileInputStatus) profileInputStatus.value = statusText;
   }
@@ -421,7 +421,7 @@ export function initAuthView() {
     });
   }
 
-  // Subscribe to auth state updates
+  // Subscribe to auth state updates (called synchronously with current state)
   authService.onAuthStateChanged((user, isAuth) => {
     if (isAuth && user) {
       renderProfile(user);
@@ -431,11 +431,10 @@ export function initAuthView() {
     }
   });
 
-  // Display initial active screen
+  // Verify token and refresh user profile via GET /users/me on startup
   if (authService.isAuthenticated()) {
-    renderProfile(authService.getUser());
-    showScreen('profile');
-  } else {
-    showScreen('login');
+    authService.refreshSession().catch((err) => {
+      console.warn('[AuthView] Session verification failed:', err);
+    });
   }
 }

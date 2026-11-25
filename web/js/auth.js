@@ -149,6 +149,24 @@ class AuthService {
   }
 
   /**
+   * Fetches the current user profile via GET /users/me to verify the active
+   * session on the server and refresh stored user data.
+   * On 401 unauthorized, api.js clears the session and notifies listeners.
+   * @returns {Promise<object|null>}
+   */
+  async refreshSession() {
+    if (!this.isAuthenticated()) {
+      return null;
+    }
+    const user = await api.get('/users/me');
+    if (user) {
+      setStoredUser(user);
+      this._notify(user, true);
+    }
+    return user;
+  }
+
+  /**
    * Logs out the current session.
    * Calls POST /auth/logout with Bearer token, then clears localStorage in finally.
    * @returns {Promise<void>}
