@@ -6,7 +6,8 @@ RUN test -n "$SERVICE" || (echo "Укажите --build-arg SERVICE=<users|chats
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PYTHONPATH=/app
 
 WORKDIR /app
 COPY shared ./shared
