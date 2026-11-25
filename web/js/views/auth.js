@@ -94,12 +94,18 @@ export function initAuthView() {
 
     const inputs = [inputLoginUser, inputLoginPass, inputRegUsername, inputRegContact, inputRegPass];
     inputs.forEach((inp) => {
-      if (inp) inp.classList.remove('has-error');
+      if (inp) {
+        inp.classList.remove('has-error');
+        inp.removeAttribute('aria-invalid');
+      }
     });
   }
 
   function setFieldError(inputEl, errorEl, message) {
-    if (inputEl) inputEl.classList.add('has-error');
+    if (inputEl) {
+      inputEl.classList.add('has-error');
+      inputEl.setAttribute('aria-invalid', 'true');
+    }
     if (errorEl) {
       errorEl.textContent = message;
       errorEl.classList.add('is-visible');

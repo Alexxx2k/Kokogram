@@ -36,12 +36,17 @@
           <input
             type="text"
             id="login-identifier"
+            name="login"
             class="form-input"
             autocomplete="username"
+            autocorrect="off"
+            autocapitalize="none"
+            spellcheck="false"
             placeholder="+79991234567 или user@mail.ru"
+            aria-describedby="err-login-user"
             required
           >
-          <div id="err-login-user" class="field-error"></div>
+          <div id="err-login-user" class="field-error" aria-live="polite"></div>
         </div>
 
         <div class="form-group">
@@ -49,12 +54,14 @@
           <input
             type="password"
             id="login-password"
+            name="password"
             class="form-input"
             autocomplete="current-password"
             placeholder="••••••••"
+            aria-describedby="err-login-pass"
             required
           >
-          <div id="err-login-pass" class="field-error"></div>
+          <div id="err-login-pass" class="field-error" aria-live="polite"></div>
         </div>
 
         <div class="card-actions">
@@ -80,12 +87,17 @@
           <input
             type="text"
             id="reg-username"
+            name="username"
             class="form-input"
-            autocomplete="username"
+            autocomplete="nickname"
+            autocorrect="off"
+            autocapitalize="none"
+            spellcheck="false"
             placeholder="alex_psarev"
+            aria-describedby="err-reg-username"
             required
           >
-          <div id="err-reg-username" class="field-error"></div>
+          <div id="err-reg-username" class="field-error" aria-live="polite"></div>
         </div>
 
         <div class="form-group">
@@ -93,11 +105,17 @@
           <input
             type="text"
             id="reg-contact"
+            name="contact"
             class="form-input"
+            autocomplete="username"
+            autocorrect="off"
+            autocapitalize="none"
+            spellcheck="false"
             placeholder="ivan@mail.ru или +79991234567"
+            aria-describedby="err-reg-contact"
             required
           >
-          <div id="err-reg-contact" class="field-error"></div>
+          <div id="err-reg-contact" class="field-error" aria-live="polite"></div>
         </div>
 
         <div class="form-group">
@@ -105,12 +123,14 @@
           <input
             type="password"
             id="reg-password"
+            name="password"
             class="form-input"
             autocomplete="new-password"
             placeholder="••••••••"
+            aria-describedby="err-reg-pass"
             required
           >
-          <div id="err-reg-pass" class="field-error"></div>
+          <div id="err-reg-pass" class="field-error" aria-live="polite"></div>
         </div>
 
         <div class="card-actions">
