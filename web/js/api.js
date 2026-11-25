@@ -414,9 +414,16 @@ async function handleMockRequest(method, path, body, headers = {}) {
    HTTP Client Core (fetch + interceptor)
    ========================================================================== */
 
+function isPublicAuthEndpoint(method, urlPath) {
+  if (method !== 'POST') return false;
+  const pathname = urlPath.replace(/^https?:\/\/[^/]+/, '').split('?')[0].replace(/\/+$/, '');
+  return pathname.endsWith('/auth/login') || pathname.endsWith('/auth/register');
+}
+
 export async function request(endpoint, options = {}) {
-  const method = (options.method || 'GET').toUpperCase();
-  const base = options.baseUrl || (typeof window !== 'undefined' && window.__API_BASE__) || DEFAULT_API_BASE;
+  const { skipAuth = false, baseUrl, token: customToken, ...fetchOptions } = options;
+  const method = (fetchOptions.method || 'GET').toUpperCase();
+  const base = baseUrl || (typeof window !== 'undefined' && window.__API_BASE__) || DEFAULT_API_BASE;
 
   let urlPath;
   if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
@@ -430,13 +437,14 @@ export async function request(endpoint, options = {}) {
         : `${cleanBase}${normalizedEndpoint}`;
   }
 
-  const token = options.token || getToken();
   const headers = {
     Accept: 'application/json',
-    ...(options.headers || {}),
+    ...(fetchOptions.headers || {}),
   };
 
-  if (token && !headers['Authorization'] && !headers['authorization']) {
+  const shouldAttachAuth = !skipAuth && !isPublicAuthEndpoint(method, urlPath);
+  const token = customToken || getToken();
+  if (shouldAttachAuth && token && !headers['Authorization'] && !headers['authorization']) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
@@ -444,7 +452,7 @@ export async function request(endpoint, options = {}) {
     headers['X-Request-ID'] = crypto.randomUUID();
   }
 
-  let body = options.body;
+  let body = fetchOptions.body;
   if (body && typeof body === 'object' && !(body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
     body = JSON.stringify(body);
@@ -452,7 +460,7 @@ export async function request(endpoint, options = {}) {
 
   // Mock interception
   if (isMockEnabled()) {
-    const parsedBody = typeof options.body === 'string' ? JSON.parse(options.body) : options.body;
+    const parsedBody = typeof fetchOptions.body === 'string' ? JSON.parse(fetchOptions.body) : fetchOptions.body;
     try {
       return await handleMockRequest(method, urlPath, parsedBody, headers);
     } catch (err) {
@@ -467,7 +475,7 @@ export async function request(endpoint, options = {}) {
   let response;
   try {
     response = await fetch(urlPath, {
-      ...options,
+      ...fetchOptions,
       method,
       headers,
       body,

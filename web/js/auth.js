@@ -90,10 +90,14 @@ class AuthService {
    */
   async login(login, password) {
     const cleanLogin = (login || '').trim();
-    const response = await api.post('/auth/login', {
-      login: cleanLogin,
-      password,
-    });
+    const response = await api.post(
+      '/auth/login',
+      {
+        login: cleanLogin,
+        password,
+      },
+      { skipAuth: true },
+    );
 
     if (response?.token && response?.user) {
       setToken(response.token);
@@ -139,7 +143,7 @@ class AuthService {
     if (targetPhone) registerPayload.phone = targetPhone;
 
     // 1. Register: returns 201 with User object (strictly without token)
-    await api.post('/auth/register', registerPayload);
+    await api.post('/auth/register', registerPayload, { skipAuth: true });
 
     // 2. Auto-login: obtain session token and store user
     const loginIdentifier = targetEmail || targetPhone || login || cleanUsername;
