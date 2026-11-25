@@ -94,9 +94,11 @@ function notifyUnauthorized() {
    Mock Mode Switch & Mock Data Repository
    ========================================================================== */
 
+export const USE_MOCK = true;
+
 export function isMockEnabled() {
   const val = localStorage.getItem(MOCK_STORAGE_KEY);
-  return val === null ? true : val === 'true';
+  return val === null ? USE_MOCK : val === 'true';
 }
 
 export function setMockEnabled(enabled) {
@@ -248,8 +250,8 @@ async function handleMockRequest(method, path, body, headers = {}) {
     const users = getMockUsers();
     const cleanUsername = username.trim();
 
-    // F_Prof_4: username_taken
-    if (users.some((u) => u.username.toLowerCase() === cleanUsername.toLowerCase())) {
+    // F_Prof_4: username_taken (case-sensitive UNIQUE constraint uq_users_username in 0001_users.py)
+    if (users.some((u) => u.username === cleanUsername)) {
       throw new ApiError(409, {
         error: {
           code: 'username_taken',
@@ -462,7 +464,24 @@ export async function request(endpoint, options = {}) {
 
   // Mock interception
   if (isMockEnabled()) {
-    const parsedBody = typeof fetchOptions.body === 'string' ? JSON.parse(fetchOptions.body) : fetchOptions.body;
+    let parsedBody = fetchOptions.body;
+    if (typeof fetchOptions.body === 'string') {
+      if (!fetchOptions.body.trim()) {
+        parsedBody = undefined;
+      } else {
+        try {
+          parsedBody = JSON.parse(fetchOptions.body);
+        } catch {
+          throw new ApiError(422, {
+            error: {
+              code: 'validation_error',
+              message: 'Некорректный формат JSON в теле запроса',
+              details: [],
+            },
+          });
+        }
+      }
+    }
     try {
       return await handleMockRequest(method, urlPath, parsedBody, headers);
     } catch (err) {
