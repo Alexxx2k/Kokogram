@@ -418,9 +418,16 @@ export async function request(endpoint, options = {}) {
   const method = (options.method || 'GET').toUpperCase();
   const base = options.baseUrl || (typeof window !== 'undefined' && window.__API_BASE__) || DEFAULT_API_BASE;
 
-  let urlPath = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  if (!urlPath.startsWith(base) && !urlPath.startsWith('http')) {
-    urlPath = `${base}${urlPath}`;
+  let urlPath;
+  if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
+    urlPath = endpoint;
+  } else {
+    const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const cleanBase = base.replace(/\/$/, '');
+    urlPath =
+      normalizedEndpoint === cleanBase || normalizedEndpoint.startsWith(`${cleanBase}/`)
+        ? normalizedEndpoint
+        : `${cleanBase}${normalizedEndpoint}`;
   }
 
   const token = options.token || getToken();
