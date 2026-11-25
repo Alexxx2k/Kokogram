@@ -1,3 +1,4 @@
+import math
 from datetime import datetime
 from uuid import UUID
 
@@ -33,7 +34,7 @@ class RedisPresenceStore:
         self, connection_id: str, user_id: UUID, expires_at: datetime
     ) -> bool:
         user_key = self._user_conns_key(user_id)
-        ttl = max(1, int((expires_at - self._clock.now()).total_seconds()))
+        ttl = max(1, math.ceil((expires_at - self._clock.now()).total_seconds()))
 
         async with self._redis.pipeline(transaction=True) as pipe:
             pipe.set(self._conn_key(connection_id), str(user_id), ex=ttl)
@@ -105,13 +106,16 @@ class RedisPresenceStore:
         if not await self.connection_exists(connection_id):
             return False
 
-        ttl = max(1, int((expires_at - self._clock.now()).total_seconds()))
+        ttl = max(1, math.ceil((expires_at - self._clock.now()).total_seconds()))
+        extended = await self._redis.expire(self._conn_key(connection_id), ttl)
+        if not extended:
+            return False
 
-        async with self._redis.pipeline(transaction=True) as pipe:
-            pipe.expire(self._conn_key(connection_id), ttl)
-            pipe.zadd(self._expirations_key, {connection_id: expires_at.timestamp()})
-            await pipe.execute()
-
+        await self._redis.zadd(
+            self._expirations_key,
+            {connection_id: expires_at.timestamp()},
+            xx=True,
+        )
         return True
 
     async def get_expired_connections(self, now: datetime) -> list[str]:

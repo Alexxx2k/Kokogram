@@ -14,7 +14,7 @@ from presence.app.ports.gateway_client import GatewayClient
 from presence.app.ports.presence_store import PresenceStore
 from presence.app.services.connection_service import ConnectionService
 
-_in_memory_store = InMemoryPresenceStore()
+_in_memory_store = InMemoryPresenceStore(clock=SystemClock())
 _in_memory_gateway_client = InMemoryGatewayClient()
 _redis_client: Redis | None = None
 _http_client: httpx.AsyncClient | None = None

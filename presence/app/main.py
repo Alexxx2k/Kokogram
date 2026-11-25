@@ -1,4 +1,3 @@
-import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -24,16 +23,18 @@ from presence.app.services.expiration_watcher import ExpirationWatcher
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     watcher: ExpirationWatcher | None = None
-    enable_watcher = os.getenv("ENABLE_EXPIRATION_WATCHER", "true").lower() in ("true", "1")
-    if enable_watcher:
-        config = get_presence_config()
+    config = get_presence_config()
+    if config.enable_expiration_watcher:
         clock = get_clock()
         redis = get_redis_client(config)
         store = get_presence_store(config, redis, clock)
         http_client = get_http_client()
         gateway_client = get_gateway_client(config, http_client)
         service = get_connection_service(store, gateway_client, clock, config)
-        watcher = ExpirationWatcher(connection_service=service, interval_seconds=1.0)
+        watcher = ExpirationWatcher(
+            connection_service=service,
+            interval_seconds=config.expiration_check_interval_seconds,
+        )
         watcher.start()
 
     yield

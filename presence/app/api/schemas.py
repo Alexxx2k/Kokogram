@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 
 class ConnectionCreateRequest(BaseModel):
-    connection_id: str
+    connection_id: str = Field(min_length=1)
     user_id: UUID
 
 

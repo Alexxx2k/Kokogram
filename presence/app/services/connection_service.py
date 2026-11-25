@@ -63,27 +63,30 @@ class ConnectionService:
         for conn_id in expired_conn_ids:
             user_id, is_last = await self._store.remove_connection(conn_id)
             if user_id is not None and is_last:
-                try:
-                    await self._notify_subscribers(user_id=user_id, online=False)
-                except Exception as exc:
-                    logger.warning(
-                        "Не удалось отправить status_changed при истечении %s: %s",
-                        conn_id,
-                        exc,
-                    )
+                await self._notify_subscribers(user_id=user_id, online=False)
         return expired_conn_ids
 
     async def _notify_subscribers(self, user_id: UUID, online: bool) -> None:
-        subscribers = await self._store.get_subscribers_for_user(user_id)
-        if not subscribers:
-            return
+        try:
+            subscribers = await self._store.get_subscribers_for_user(user_id)
+            if not subscribers:
+                return
 
-        deliveries = [
-            WsDelivery(
-                connection_id=sub_conn_id,
-                type="status_changed",
-                payload={"user_id": str(user_id), "online": online},
+            deliveries = [
+                WsDelivery(
+                    connection_id=sub_conn_id,
+                    type="status_changed",
+                    payload={"user_id": str(user_id), "online": online},
+                )
+                for sub_conn_id in subscribers
+            ]
+            await self._gateway_client.deliver(deliveries)
+        except Exception as exc:
+            error_code = str(exc.code) if isinstance(exc, AppError) else None
+            logger.warning(
+                "Не удалось отправить status_changed для %s (online=%s): %s",
+                user_id,
+                online,
+                exc,
+                extra={"user_id": str(user_id), "error_code": error_code},
             )
-            for sub_conn_id in subscribers
-        ]
-        await self._gateway_client.deliver(deliveries)
