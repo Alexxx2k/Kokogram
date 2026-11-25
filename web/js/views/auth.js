@@ -157,9 +157,12 @@ export function initAuthView() {
         return 'Некорректный адрес электронной почты';
       }
     } else {
-      const digits = clean.replace(/\D/g, '');
-      if (digits.length < 10 || digits.length > 11) {
+      if (!/^\+?[\d\s\-()]+$/.test(clean)) {
         return 'Некорректный формат телефона (например, +79991234567)';
+      }
+      const digits = clean.replace(/\D/g, '');
+      if (digits.length !== 11 || !(digits.startsWith('7') || digits.startsWith('8'))) {
+        return 'Некорректный формат телефона (например, +79991234567 или 89991234567)';
       }
     }
     return null;

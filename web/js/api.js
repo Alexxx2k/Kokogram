@@ -145,13 +145,19 @@ function saveMockUsers(users) {
   localStorage.setItem(MOCK_DB_STORAGE_KEY, JSON.stringify(users));
 }
 
+function isPhoneLike(value) {
+  return /^\+?[\d\s\-()]+$/.test(value);
+}
+
 function normalizePhone(phone) {
   if (!phone) return '';
-  const digits = phone.replace(/\D/g, '');
+  const trimmed = phone.trim();
+  if (!isPhoneLike(trimmed)) return trimmed;
+  const digits = trimmed.replace(/\D/g, '');
   if (digits.length === 11 && (digits.startsWith('7') || digits.startsWith('8'))) {
     return '+7' + digits.slice(1);
   }
-  return phone.trim();
+  return trimmed;
 }
 
 function normalizeEmail(email) {
