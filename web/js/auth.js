@@ -19,6 +19,16 @@ import {
   setUnauthorizedHandler,
 } from './api.js';
 
+export class AutoLoginError extends Error {
+  constructor(cause, user, loginIdentifier) {
+    super('Аккаунт создан, но автоматический вход не удался');
+    this.name = 'AutoLoginError';
+    this.cause = cause;
+    this.user = user;
+    this.loginIdentifier = loginIdentifier;
+  }
+}
+
 class AuthService {
   constructor() {
     this._listeners = new Set();
@@ -143,13 +153,19 @@ class AuthService {
     if (targetPhone) registerPayload.phone = targetPhone;
 
     // 1. Register: returns 201 with User object (strictly without token)
-    await api.post('/auth/register', registerPayload, { skipAuth: true });
+    const createdUser = await api.post('/auth/register', registerPayload, { skipAuth: true });
 
-    // 2. Auto-login: obtain session token and store user
-    const loginIdentifier = targetEmail || targetPhone || login || cleanUsername;
-    const loginResponse = await this.login(loginIdentifier, password);
+    // 2. Auto-login: obtain session token and store user (only by email or phone per F_Auth_9, F_Auth_10)
+    const loginIdentifier = targetEmail || targetPhone;
+    if (!loginIdentifier) {
+      throw new AutoLoginError(new Error('Email или телефон не указан'), createdUser, '');
+    }
 
-    return loginResponse;
+    try {
+      return await this.login(loginIdentifier, password);
+    } catch (loginErr) {
+      throw new AutoLoginError(loginErr, createdUser, loginIdentifier);
+    }
   }
 
   /**

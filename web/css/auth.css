@@ -170,6 +170,12 @@ body {
   display: block;
 }
 
+.form-alert.is-warning {
+  border-color: var(--yellow);
+  background-color: rgba(255, 215, 0, 0.1);
+  color: var(--yellow);
+}
+
 /* Form Groups */
 .form-group {
   margin-bottom: 20px;

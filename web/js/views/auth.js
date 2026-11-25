@@ -9,7 +9,7 @@
  */
 
 import { ApiError, isMockEnabled } from '../api.js';
-import authService from '../auth.js';
+import authService, { AutoLoginError } from '../auth.js';
 
 export function initAuthView() {
   // View containers
@@ -76,11 +76,11 @@ export function initAuthView() {
     // Hide form alerts
     if (alertLogin) {
       alertLogin.textContent = '';
-      alertLogin.classList.remove('is-visible');
+      alertLogin.classList.remove('is-visible', 'is-warning');
     }
     if (alertRegister) {
       alertRegister.textContent = '';
-      alertRegister.classList.remove('is-visible');
+      alertRegister.classList.remove('is-visible', 'is-warning');
     }
 
     // Hide field errors and remove error borders
@@ -106,9 +106,10 @@ export function initAuthView() {
     }
   }
 
-  function setFormAlert(alertEl, message) {
+  function setFormAlert(alertEl, message, variant = 'error') {
     if (alertEl) {
       alertEl.textContent = message;
+      alertEl.classList.toggle('is-warning', variant === 'warning');
       alertEl.classList.add('is-visible');
     }
   }
@@ -392,7 +393,19 @@ export function initAuthView() {
         resetAuthForms();
         // Success automatically triggers auto-login and transitions to profile
       } catch (err) {
-        if (err instanceof ApiError) {
+        if (err instanceof AutoLoginError) {
+          if (formRegister) formRegister.reset();
+          showScreen('login');
+          if (inputLoginUser && err.loginIdentifier) {
+            inputLoginUser.value = err.loginIdentifier;
+          }
+          const reason = err.cause instanceof ApiError ? ` (${err.cause.code})` : '';
+          setFormAlert(
+            alertLogin,
+            `Аккаунт создан, но автоматический вход не выполнен${reason}. Пожалуйста, войдите с указанными данными.`,
+            'warning',
+          );
+        } else if (err instanceof ApiError) {
           if (err.code === 'username_taken') {
             setFieldError(inputRegUsername, errRegUsername, 'Ошибка 409 (username_taken): Username уже используется');
           } else if (err.code === 'email_taken') {
