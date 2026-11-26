@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Annotated
 
@@ -32,6 +33,40 @@ WS_CLOSE_UNAUTHORIZED = 4401
 WS_CLOSE_INTERNAL_ERROR = 1011
 
 
+async def _safe_accept(websocket: WebSocket) -> bool:
+    try:
+        await websocket.accept()
+        return True
+    except (WebSocketDisconnect, RuntimeError) as exc:
+        logger.info("WS-соединение оборвалось при handshake (accept): %s", exc)
+        return False
+
+
+async def _safe_close(websocket: WebSocket, code: int) -> None:
+    try:
+        await websocket.close(code=code)
+    except (WebSocketDisconnect, RuntimeError) as exc:
+        logger.debug("Не удалось отправить close(%s) в WS: %s", code, exc)
+
+
+async def _safe_accept_and_close(websocket: WebSocket, code: int) -> None:
+    if await _safe_accept(websocket):
+        await _safe_close(websocket, code=code)
+
+
+async def _best_effort_disconnect(presence_client: PresenceClient, connection_id: str) -> None:
+    try:
+        await presence_client.disconnect(connection_id)
+    except Exception as exc:
+        error_code = str(exc.code) if isinstance(exc, AppError) else None
+        logger.warning(
+            "Не удалось уведомить presence об отключении %s: %s",
+            connection_id,
+            exc,
+            extra={"error_code": error_code},
+        )
+
+
 @router.websocket("/api/v1/ws")
 async def websocket_endpoint(
     websocket: WebSocket,
@@ -42,6 +77,10 @@ async def websocket_endpoint(
     id_generator: Annotated[IdGenerator, Depends(get_id_generator)],
     token: str | None = Query(default=None),
 ) -> None:
+    current_task = asyncio.current_task()
+    if current_task is not None:
+        registry.track_task(current_task)
+
     request_id = websocket.headers.get(REQUEST_ID_HEADER) or str(id_generator.new_id())
     req_token = set_request_id(request_id)
     user_token = set_user_id(None)
@@ -49,30 +88,29 @@ async def websocket_endpoint(
     try:
         clean_token = (token or "").strip()
         if not clean_token:
-            await websocket.accept()
-            await websocket.close(code=WS_CLOSE_UNAUTHORIZED)
+            await _safe_accept_and_close(websocket, code=WS_CLOSE_UNAUTHORIZED)
             return
 
         try:
             user_id = await users_client.verify_session(clean_token)
-        except AppError as exc:
+        except Exception as exc:
+            error_code = str(exc.code) if isinstance(exc, AppError) else None
             logger.warning(
                 "Не удалось проверить токен WebSocket-соединения: %s",
                 exc,
-                extra={"error_code": str(exc.code)},
+                extra={"error_code": error_code},
             )
-            await websocket.accept()
-            await websocket.close(code=WS_CLOSE_INTERNAL_ERROR)
+            await _safe_accept_and_close(websocket, code=WS_CLOSE_INTERNAL_ERROR)
             return
 
         if not user_id:
-            await websocket.accept()
-            await websocket.close(code=WS_CLOSE_UNAUTHORIZED)
+            await _safe_accept_and_close(websocket, code=WS_CLOSE_UNAUTHORIZED)
             return
 
         uid = str(user_id)
         set_user_id(uid)
-        await websocket.accept()
+        if not await _safe_accept(websocket):
+            return
 
         connection_id = str(id_generator.new_id())
         registry.register(connection_id, websocket, user_id=uid)
@@ -91,7 +129,8 @@ async def websocket_endpoint(
                 exc,
                 extra={"error_code": error_code},
             )
-            await websocket.close(code=WS_CLOSE_INTERNAL_ERROR)
+            await _best_effort_disconnect(presence_client, connection_id)
+            await _safe_close(websocket, code=WS_CLOSE_INTERNAL_ERROR)
             return
 
         logger.info("WS-соединение %s установлено", connection_id)
@@ -104,39 +143,38 @@ async def websocket_endpoint(
 
                 raw_text = message.get("text")
                 if raw_text is None:
-                    await websocket.send_json(
+                    sent = await registry.send(
+                        connection_id,
                         {
                             "type": "error",
                             "payload": {
                                 "code": str(ErrorCode.VALIDATION_ERROR),
                                 "message": "Ожидается текстовое JSON-сообщение",
                             },
-                        }
+                        },
                     )
+                    if not sent:
+                        break
                     continue
 
                 action = await session_handler.handle_raw_message(connection_id, raw_text)
                 if action.response is not None:
-                    await websocket.send_json(action.response)
+                    sent = await registry.send(connection_id, action.response)
+                    if not sent:
+                        break
                 if action.should_close:
-                    await websocket.close(code=action.close_code)
+                    await _safe_close(websocket, code=action.close_code)
                     break
         except WebSocketDisconnect:
             logger.info("WS-соединение %s закрыто клиентом", connection_id)
+        except asyncio.CancelledError:
+            logger.info("WS-соединение %s отменено при остановке сервера", connection_id)
+            raise
         except Exception as exc:
             logger.warning("Ошибка в WS-соединении %s: %s", connection_id, exc)
         finally:
             registry.unregister(connection_id)
-            try:
-                await presence_client.disconnect(connection_id)
-            except Exception as exc:
-                error_code = str(exc.code) if isinstance(exc, AppError) else None
-                logger.warning(
-                    "Не удалось уведомить presence об отключении %s: %s",
-                    connection_id,
-                    exc,
-                    extra={"error_code": error_code},
-                )
+            await _best_effort_disconnect(presence_client, connection_id)
             logger.info("WS-соединение %s завершено", connection_id)
     finally:
         reset_user_id(user_token)

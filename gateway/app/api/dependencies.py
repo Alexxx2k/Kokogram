@@ -20,7 +20,7 @@ _route_table = RouteTable()
 _http_client: httpx.AsyncClient | None = None
 _in_memory_users_client = InMemoryUsersClient()
 _in_memory_presence_client = InMemoryPresenceClient()
-_connection_registry = ConnectionRegistry()
+_connection_registry: ConnectionRegistry | None = None
 _id_generator = UuidGenerator()
 
 
@@ -37,6 +37,10 @@ def get_id_generator() -> IdGenerator:
 
 
 def get_connection_registry() -> ConnectionRegistry:
+    global _connection_registry
+    if _connection_registry is None:
+        config = get_gateway_config()
+        _connection_registry = ConnectionRegistry(send_timeout=config.ws_send_timeout_seconds)
     return _connection_registry
 
 

@@ -1,3 +1,4 @@
+import inspect
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -14,7 +15,15 @@ from gateway.app.api.ws import router as ws_router
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     yield
-    await get_connection_registry().close_all()
+    registry_provider = app.dependency_overrides.get(
+        get_connection_registry,
+        get_connection_registry,
+    )
+    registry = registry_provider()
+    if inspect.isawaitable(registry):
+        registry = await registry
+    await registry.close_all()
+    await registry.wait_tasks()
     await close_http_client()
 
 

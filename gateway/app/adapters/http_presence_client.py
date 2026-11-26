@@ -100,15 +100,26 @@ class HttpPresenceClient(PresenceClient):
                 timeout=self._timeout,
             )
             if response.status_code == 200:
-                data = response.json()
-                raw_statuses = data.get("statuses", [])
-                return [
-                    UserStatus(
-                        user_id=str(item["user_id"]),
-                        online=bool(item["online"]),
-                    )
-                    for item in raw_statuses
-                ]
+                try:
+                    data = response.json()
+                    if not isinstance(data, dict):
+                        raise ValueError("Ответ presence не является JSON-объектом")
+                    raw_statuses = data.get("statuses", [])
+                    if not isinstance(raw_statuses, list):
+                        raise ValueError("Поле statuses должно быть списком")
+                    statuses: list[UserStatus] = []
+                    for item in raw_statuses:
+                        if not isinstance(item, dict) or item.get("user_id") is None:
+                            raise ValueError("Некорректный элемент в statuses")
+                        statuses.append(
+                            UserStatus(
+                                user_id=str(item["user_id"]),
+                                online=bool(item["online"]),
+                            )
+                        )
+                    return statuses
+                except (ValueError, KeyError, TypeError, AttributeError) as exc:
+                    raise AppError(ErrorCode.SERVICE_UNAVAILABLE) from exc
             if response.status_code == 404:
                 raise AppError(ErrorCode.NOT_FOUND, "Соединение не найдено")
             raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
