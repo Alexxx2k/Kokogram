@@ -11,7 +11,6 @@ from app.services.profile import ProfileService
 router = APIRouter(prefix="/users", tags=["users"], dependencies=[Depends(get_current_user)])
 
 
-# Статический /me должен быть объявлен раньше динамического /{user_id}.
 @router.get("/me", response_model=OwnUserResponse)
 async def get_own_profile(
     user: Annotated[User, Depends(get_current_user)],

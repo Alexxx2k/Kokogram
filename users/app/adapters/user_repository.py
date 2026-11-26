@@ -29,6 +29,11 @@ class SqlAlchemyUserRepository:
     async def get_by_id(self, user_id: UUID) -> User | None:
         return await self._fetch_one(sa.select(users).where(users.c.id == user_id))
 
+    async def get_by_id_for_update(self, user_id: UUID) -> User | None:
+        return await self._fetch_one(
+            sa.select(users).where(users.c.id == user_id).with_for_update() #чтоб строку заблочить до конца транзакции
+        )
+
     async def get_by_email(self, email: str) -> User | None:
         return await self._fetch_one(sa.select(users).where(users.c.email == email))
 
@@ -44,7 +49,6 @@ class SqlAlchemyUserRepository:
         with translate_database_errors():
             result = await self._session.execute(sa.select(users).where(users.c.id.in_(user_ids)))
             found = {row["id"]: User(**row) for row in result.mappings()}
-        # Сохраняем порядок входного списка, отсутствующие ID пропускаем.
         return [found[user_id] for user_id in dict.fromkeys(user_ids) if user_id in found]
 
     async def update_profile(self, user_id: UUID, changes: ProfileChanges) -> User | None:

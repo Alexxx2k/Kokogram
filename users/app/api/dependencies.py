@@ -17,16 +17,20 @@ from kokogram_shared import (
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.adapters.database import translate_database_errors
+from app.adapters.avatar_inspector import PillowAvatarInspector
+from app.adapters.database import TransactionCallbacks, translate_database_errors
 from app.adapters.password_hasher import BcryptPasswordHasher
 from app.adapters.session_repository import SqlAlchemySessionRepository
 from app.adapters.user_repository import SqlAlchemyUserRepository
 from app.config import Settings
 from app.models import User
+from app.ports.avatar_storage import AvatarInspector, AvatarStorage
 from app.ports.password_hasher import PasswordHasher
 from app.ports.session_repository import SessionRepository
+from app.ports.transaction_hooks import TransactionHooks
 from app.ports.user_repository import UserRepository
 from app.services.auth import AuthService
+from app.services.avatars import AvatarService
 from app.services.profile import ProfileService
 from app.services.sessions import SessionService
 
@@ -38,9 +42,17 @@ def get_settings() -> Settings:
 
 
 async def get_database_session(request: Request) -> AsyncIterator[AsyncSession]:
-    with translate_database_errors():
-        async with request.app.state.database.sessions() as session, session.begin():
-            yield session
+    callbacks = TransactionCallbacks()
+    committed = False
+    try:
+        with translate_database_errors():
+            async with request.app.state.database.sessions() as session:
+                session.info["transaction_hooks"] = callbacks
+                async with session.begin():
+                    yield session
+                committed = True
+    finally:
+        await callbacks.finish(committed=committed)
 
 
 def get_user_repository(
@@ -129,4 +141,32 @@ def get_url_signer(
         secret=settings.url_signing_secret,
         clock=clock,
         ttl=settings.signed_url_ttl_seconds,
+    )
+
+
+def get_avatar_storage(request: Request) -> AvatarStorage:
+    return request.app.state.avatar_storage
+
+
+def get_avatar_inspector() -> AvatarInspector:
+    return PillowAvatarInspector()
+
+
+def get_transaction_hooks(
+    session: Annotated[AsyncSession, Depends(get_database_session, scope="function")],
+) -> TransactionHooks:
+    return session.info["transaction_hooks"]
+
+
+def get_avatar_service(
+    users: Annotated[UserRepository, Depends(get_user_repository)],
+    storage: Annotated[AvatarStorage, Depends(get_avatar_storage)],
+    inspector: Annotated[AvatarInspector, Depends(get_avatar_inspector)],
+    id_generator: Annotated[IdGenerator, Depends(get_id_generator)],
+    signer: Annotated[UrlSigner, Depends(get_url_signer)],
+    hooks: Annotated[TransactionHooks, Depends(get_transaction_hooks)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> AvatarService:
+    return AvatarService(
+        users, storage, inspector, id_generator, signer, hooks, settings.avatar_max_bytes
     )

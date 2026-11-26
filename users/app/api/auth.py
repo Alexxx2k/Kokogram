@@ -1,8 +1,14 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Response, status
+from kokogram_shared import UrlSigner
 
-from app.api.dependencies import get_auth_service, get_bearer_token, get_session_service
+from app.api.dependencies import (
+    get_auth_service,
+    get_bearer_token,
+    get_session_service,
+    get_url_signer,
+)
 from app.api.schemas import LoginRequest, LoginResponse, RegisterRequest, UserResponse
 from app.services.auth import AuthService
 from app.services.sessions import SessionService
@@ -14,6 +20,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 async def register(
     body: RegisterRequest,
     service: Annotated[AuthService, Depends(get_auth_service)],
+    signer: Annotated[UrlSigner, Depends(get_url_signer)],
 ) -> UserResponse:
     user = await service.register(
         username=body.username,
@@ -21,13 +28,14 @@ async def register(
         email=body.email,
         phone=body.phone,
     )
-    return UserResponse.from_user(user)
+    return UserResponse.from_user(user, signer)
 
 
 @router.post("/login", response_model=LoginResponse)
 async def login(
     body: LoginRequest,
     service: Annotated[AuthService, Depends(get_auth_service)],
+    signer: Annotated[UrlSigner, Depends(get_url_signer)],
 ) -> LoginResponse:
     result = await service.login(
         login=body.login,
@@ -36,7 +44,7 @@ async def login(
     return LoginResponse(
         token=result.session.token,
         expires_at=result.session.expires_at,
-        user=UserResponse.from_user(result.user),
+        user=UserResponse.from_user(result.user, signer),
     )
 
 

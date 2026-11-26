@@ -9,6 +9,18 @@ services:
     profiles: [full]
     image: kokogram-users
     build: {<<: *service-build, args: {SERVICE: users}}
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER:-kokogram}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kokogram}
+      POSTGRES_DB: ${POSTGRES_DB:-kokogram}
+      S3_ENDPOINT_URL: http://seaweedfs:8333
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_BUCKET: ${S3_BUCKET:-kokogram}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-}
+      URL_SIGNING_SECRET: ${URL_SIGNING_SECRET:-}
   chats:
     profiles: [full]
     image: kokogram-chats

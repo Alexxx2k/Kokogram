@@ -1,8 +1,9 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
+from kokogram_shared import UrlSigner
 
-from app.api.dependencies import get_profile_service, get_session_service
+from app.api.dependencies import get_profile_service, get_session_service, get_url_signer
 from app.api.schemas import (
     UserIdsQuery,
     UserResponse,
@@ -29,6 +30,7 @@ async def verify_session(
 async def get_users(
     query: Annotated[UserIdsQuery, Query()],
     service: Annotated[ProfileService, Depends(get_profile_service)],
+    signer: Annotated[UrlSigner, Depends(get_url_signer)],
 ) -> UsersResponse:
     users = await service.get_many(query.ids)
-    return UsersResponse(items=[UserResponse.from_user(user) for user in users])
+    return UsersResponse(items=[UserResponse.from_user(user, signer) for user in users])

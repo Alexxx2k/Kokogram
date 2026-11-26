@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Self
 from uuid import UUID
 
+from kokogram_shared import UrlSigner
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, StrictStr, field_validator
 
 from app.models import User
@@ -21,8 +22,11 @@ class UserResponse(BaseModel):
     avatar_url: str | None = None
 
     @classmethod
-    def from_user(cls, user: User) -> Self:
-        return cls.model_validate(user, from_attributes=True)
+    def from_user(cls, user: User, signer: UrlSigner) -> Self:
+        response = cls.model_validate(user, from_attributes=True)
+        if user.avatar_key is not None:
+            response.avatar_url = signer.sign(f"/api/v1/users/{user.id}/avatar")
+        return response
 
 
 class OwnUserResponse(UserResponse):
