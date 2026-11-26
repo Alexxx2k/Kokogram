@@ -21,7 +21,7 @@ async def register(
         email=body.email,
         phone=body.phone,
     )
-    return UserResponse(id=user.id, username=user.username, status=user.status, avatar_url=None)
+    return UserResponse.from_user(user)
 
 
 @router.post("/login", response_model=LoginResponse)
@@ -36,12 +36,7 @@ async def login(
     return LoginResponse(
         token=result.session.token,
         expires_at=result.session.expires_at,
-        user=UserResponse(
-            id=result.user.id,
-            username=result.user.username,
-            status=result.user.status,
-            avatar_url=None,
-        ),
+        user=UserResponse.from_user(result.user),
     )
 
 

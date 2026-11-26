@@ -27,6 +27,7 @@ from app.ports.password_hasher import PasswordHasher
 from app.ports.session_repository import SessionRepository
 from app.ports.user_repository import UserRepository
 from app.services.auth import AuthService
+from app.services.profile import ProfileService
 from app.services.sessions import SessionService
 
 _bearer = HTTPBearer(auto_error=False)
@@ -68,6 +69,12 @@ def get_token_generator() -> TokenGenerator:
 
 def get_password_hasher() -> PasswordHasher:
     return BcryptPasswordHasher()
+
+
+def get_profile_service(
+    users: Annotated[UserRepository, Depends(get_user_repository)],
+) -> ProfileService:
+    return ProfileService(users)
 
 
 def get_session_service(

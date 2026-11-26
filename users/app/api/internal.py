@@ -1,9 +1,16 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
-from app.api.dependencies import get_session_service
-from app.api.schemas import VerifySessionRequest, VerifySessionResponse
+from app.api.dependencies import get_profile_service, get_session_service
+from app.api.schemas import (
+    UserIdsQuery,
+    UserResponse,
+    UsersResponse,
+    VerifySessionRequest,
+    VerifySessionResponse,
+)
+from app.services.profile import ProfileService
 from app.services.sessions import SessionService
 
 router = APIRouter(prefix="/internal", tags=["internal"])
@@ -16,3 +23,12 @@ async def verify_session(
 ) -> VerifySessionResponse:
     token = body.token.get_secret_value() if body.token is not None else None
     return VerifySessionResponse(user_id=await service.verify(token))
+
+
+@router.get("/users", response_model=UsersResponse)
+async def get_users(
+    query: Annotated[UserIdsQuery, Query()],
+    service: Annotated[ProfileService, Depends(get_profile_service)],
+) -> UsersResponse:
+    users = await service.get_many(query.ids)
+    return UsersResponse(items=[UserResponse.from_user(user) for user in users])

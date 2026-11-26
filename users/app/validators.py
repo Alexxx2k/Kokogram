@@ -22,6 +22,12 @@ def validate_password(value: str | None) -> str:
     return value
 
 
+def validate_status(value: str | None) -> str | None:
+    if value is not None and len(value) > 20:
+        raise AppError.validation(ValidationReason.STATUS_LENGTH, field="status")
+    return value
+
+
 def normalize_email(value: str) -> str:
     try:
         normalized = validate_email(value.strip(), check_deliverability=False).normalized.lower()
