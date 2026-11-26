@@ -1,11 +1,19 @@
 from typing import Any
 
-from messages.app.ports.event_publisher import EventPublisher
+from kokogram_shared import Clock, IdGenerator
 
 
-class RecordingPublisher(EventPublisher):
-    def __init__(self):
-        self.events: list[tuple[str, dict[str, Any]]] = []
+class RecordingPublisher:
+    def __init__(self, clock: Clock, id_generator: IdGenerator):
+        self.events: list[dict[str, Any]] = []
+        self.clock = clock
+        self.id_generator = id_generator
 
     async def publish(self, event_type: str, payload: dict[str, Any]) -> None:
-        self.events.append((event_type, payload))
+        envelope = {
+            "event_id": str(self.id_generator.new_id()),
+            "type": event_type,
+            "occurred_at": self.clock.now().isoformat(),
+            "payload": payload,
+        }
+        self.events.append(envelope)

@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from messages.app.models import MessageDTO
+from messages.app.api.schemas import MessageDTO
 
 
 class MessageRepository(Protocol):

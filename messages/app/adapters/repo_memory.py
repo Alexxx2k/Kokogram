@@ -1,27 +1,51 @@
+import base64
+import json
 from datetime import datetime
 
-from messages.app.models import MessageDTO
-from messages.app.ports.message_repo import MessageRepository
+from messages.app.api.schemas import MessageDTO
 
 
-class MemoryMessageRepository(MessageRepository):
+class MemoryMessageRepository:
     def __init__(self):
         self._messages: dict[str, MessageDTO] = {}
         self._chat_messages: dict[str, list[str]] = {}
         self._hidden: set[tuple[str, str]] = set()
 
     def _encode_cursor(self, message: MessageDTO) -> str:
-        return f"{message.created_at.isoformat()}_{message.id}"
+        time_str = message.created_at.isoformat()
+        if time_str.endswith("+00:00"):
+            time_str = time_str[:-6] + "Z"
+
+        raw_data = json.dumps({"t": time_str, "id": message.id})
+        return base64.urlsafe_b64encode(raw_data.encode()).decode()
 
     def _decode_cursor(self, cursor: str) -> tuple[datetime, str]:
-        time_str, msg_id = cursor.rsplit("_", 1)
-        return datetime.fromisoformat(time_str), msg_id
+        from kokogram_shared import AppError, ErrorCode
+
+        try:
+            decoded = base64.urlsafe_b64decode(cursor.encode()).decode()
+            data = json.loads(decoded)
+
+            time_str = data["t"]
+            if time_str.endswith("Z"):
+                time_str = time_str[:-1] + "+00:00"
+
+            return datetime.fromisoformat(time_str), data["id"]
+        except (ValueError, KeyError, TypeError, base64.binascii.Error):
+            raise AppError(
+                ErrorCode.VALIDATION_ERROR,
+                details=[{"field": "before", "reason": "invalid_cursor"}],
+            )
 
     async def save(self, message: MessageDTO) -> None:
-        self._messages[message.id] = message
-        if message.chat_id not in self._chat_messages:
-            self._chat_messages[message.chat_id] = []
-        self._chat_messages[message.chat_id].append(message.id)
+        is_new = message.id not in self._messages
+
+        self._messages[message.id] = message.model_copy(deep=True)
+
+        if is_new:
+            if message.chat_id not in self._chat_messages:
+                self._chat_messages[message.chat_id] = []
+            self._chat_messages[message.chat_id].append(message.id)
 
     async def get_by_id(self, message_id: str) -> MessageDTO | None:
         return self._messages.get(message_id)
@@ -51,10 +75,17 @@ class MemoryMessageRepository(MessageRepository):
 
     async def mark_deleted_for_all(self, message_id: str) -> None:
         if message_id in self._messages:
-            msg = self._messages[message_id]
-            msg.is_deleted = True
-            msg.text = None
-            msg.entities = None
+            message = self._messages.pop(message_id)
+
+            chat_ids = self._chat_messages.get(message.chat_id, [])
+            if message_id in chat_ids:
+                chat_ids.remove(message_id)
+
+            self._hidden = {(uid, mid) for uid, mid in self._hidden if mid != message_id}
+
+            for msg in self._messages.values():
+                if msg.reply_to_id == message_id:
+                    msg.reply_to_id = None
 
     async def hide_for_user(self, message_id: str, user_id: str) -> None:
         self._hidden.add((user_id, message_id))
