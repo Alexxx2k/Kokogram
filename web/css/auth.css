@@ -73,13 +73,11 @@ body {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: repeating-linear-gradient(
-    to bottom,
-    transparent 0px,
-    transparent 2px,
-    rgba(8, 5, 18, 0.35) 2px,
-    rgba(8, 5, 18, 0.35) 4px
-  );
+  background: repeating-linear-gradient(to bottom,
+      transparent 0px,
+      transparent 2px,
+      rgba(8, 5, 18, 0.35) 2px,
+      rgba(8, 5, 18, 0.35) 4px);
 }
 
 .brand-star {
@@ -388,20 +386,17 @@ body {
 }
 
 @keyframes pulse-dot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.85); }
-}
 
-.mock-badge {
-  display: inline-block;
-  padding: 3px 8px;
-  font-size: 10px;
-  letter-spacing: 1px;
-  color: var(--yellow);
-  border: 1px solid rgba(255, 215, 0, 0.4);
-  background: rgba(255, 215, 0, 0.08);
-  border-radius: 2px;
-  margin-top: 4px;
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.4;
+    transform: scale(0.85);
+  }
 }
 
 /* Hidden views */
