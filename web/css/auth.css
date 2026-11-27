@@ -27,7 +27,7 @@
 
 body {
   background-color: var(--bg-main);
-  background-image: 
+  background-image:
     radial-gradient(ellipse at 50% 10%, rgba(30, 15, 60, 0.5) 0%, transparent 70%),
     linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
@@ -261,12 +261,18 @@ body {
   outline: none;
 }
 
+.btn:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
 .btn-cyan {
   border: 2px solid var(--cyan);
   color: var(--cyan);
 }
 
-.btn-cyan:hover:not(:disabled) {
+.btn-cyan:hover:not(:disabled),
+.btn-cyan:focus-visible:not(:disabled) {
   background-color: rgba(0, 240, 255, 0.15);
   box-shadow: 0 0 12px var(--cyan);
 }
@@ -276,7 +282,8 @@ body {
   color: var(--pink);
 }
 
-.btn-pink:hover:not(:disabled) {
+.btn-pink:hover:not(:disabled),
+.btn-pink:focus-visible:not(:disabled) {
   background-color: rgba(255, 0, 127, 0.15);
   box-shadow: 0 0 12px var(--pink);
 }
@@ -286,7 +293,8 @@ body {
   color: var(--red);
 }
 
-.btn-red:hover:not(:disabled) {
+.btn-red:hover:not(:disabled),
+.btn-red:focus-visible:not(:disabled) {
   background-color: rgba(255, 42, 85, 0.15);
   box-shadow: 0 0 12px var(--red);
 }
@@ -306,9 +314,16 @@ body {
   transition: color 0.2s, text-shadow 0.2s;
 }
 
-.auth-switch-link:hover {
+.auth-switch-link:hover,
+.auth-switch-link:focus-visible {
   text-decoration: underline;
   text-shadow: 0 0 6px var(--cyan-glow);
+}
+
+.auth-switch-link:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+  border-radius: 2px;
 }
 
 /* ==========================================================================
