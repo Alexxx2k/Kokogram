@@ -100,6 +100,7 @@ services:
     command: server -s3 -dir=/data
     ports:
       - "8333:8333"
+      - "127.0.0.1:8888:8888"
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:9333/cluster/status || exit 1"]
       interval: 10s

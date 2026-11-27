@@ -132,8 +132,31 @@ make clean  # остановить и удалить данные (volumes)
 make help  # список всех команд
 ```
 
-Порты: PostgreSQL `5432`, Redis `6379`, RabbitMQ `5672` (панель `15672`), SeaweedFS S3 `8333`, Giphy-заглушка `8090`.
+Порты: PostgreSQL `5432`, Redis `6379`, RabbitMQ `5672` (панель `15672`), SeaweedFS S3 `8333` (Filer UI `8888`), Giphy-заглушка `8090`.
 Режим отказа Giphy: `POST http://localhost:8090/__admin/fail?enabled=true` (выключить: `enabled=false`).
+
+Веб-интерфейс SeaweedFS Filer доступен на [http://localhost:8888](http://localhost:8888).
+Он позволяет просматривать файлы хранилища; S3 buckets находятся в `/buckets/`.
+После создания bucket `kokogram` его содержимое можно открыть по адресу
+[http://localhost:8888/buckets/kokogram/](http://localhost:8888/buckets/kokogram/).
+Filer уже запускается командой `server -s3`; отдельный контейнер для UI не нужен.
+Порт UI опубликован только на `127.0.0.1`.
+
+Если стандартный порт занят, создайте игнорируемый Git файл `docker-compose.local.yml`.
+Makefile автоматически добавляет его к основной конфигурации. Например:
+
+```yaml
+services:
+  postgres:
+    ports: !override
+      - "127.0.0.1:55432:5432"
+```
+
+`!override` заменяет весь список портов и требует Docker Compose 2.24.4 или новее.
+Для локального сервиса и миграций задайте
+`POSTGRES_PORT=55432` в `.env`; внутри контейнеров адрес остаётся `postgres:5432`.
+Прямой вызов `docker compose -f docker-compose.test.yml` не подключает локальный
+файл автоматически: добавьте `-f docker-compose.local.yml` или используйте `make`.
 
 ---
 
@@ -176,6 +199,21 @@ uvicorn app.main:app --reload
 
 Проверка: `http://127.0.0.1:8000/health` -> `{"status": "ok"}`.
 Интерактивная документация OpenAPI (Swagger): `http://127.0.0.1:8000/docs`.
+При запуске с `--port 8001` Swagger будет на `http://127.0.0.1:8001/docs`.
+Swagger встроен в FastAPI и не требует отдельного контейнера. В
+`docker-compose.test.yml` порт сервиса `users` не опубликован на хост; для прямого
+доступа к его Swagger в Docker добавьте в `docker-compose.local.yml`:
+
+```yaml
+services:
+  users:
+    ports:
+      - "127.0.0.1:8001:8000"
+```
+
+Если локальный файл уже существует, добавьте `users` в имеющийся раздел `services`.
+Затем выполните `make svc s=users`; Swagger будет доступен на
+[http://localhost:8001/docs](http://localhost:8001/docs).
 
 Для `users` перед обращением к API нужно применить миграции; для аватаров также
 создать S3 bucket. При своих учётных данных PostgreSQL/S3 экспортируйте их в
