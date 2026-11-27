@@ -8,7 +8,7 @@
  *  - Instant seamless view transitions without page reloads.
  */
 
-import { ApiError, isMockEnabled } from '../api.js';
+import { ApiError } from '../api.js';
 import authService, { AutoLoginError } from '../auth.js';
 
 export function initAuthView() {
@@ -51,9 +51,6 @@ export function initAuthView() {
   const profileInputStatus = document.getElementById('profile-input-status');
   const btnLogout = document.getElementById('btn-logout');
 
-  // State
-  let currentScreen = 'login'; // 'login' | 'register' | 'profile'
-
   /* ==========================================================================
      Screen Switching
      ========================================================================== */
@@ -64,7 +61,6 @@ export function initAuthView() {
   }
 
   function showScreen(screen) {
-    currentScreen = screen;
     clearAllErrors();
 
     if (viewLogin) viewLogin.classList.toggle('is-active', screen === 'login');
