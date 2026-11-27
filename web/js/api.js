@@ -20,11 +20,21 @@ export const DEFAULT_API_BASE = '/api/v1';
 export class ApiError extends Error {
   constructor(status, errorPayload) {
     const error = errorPayload?.error || {};
-    const message = error.message || (typeof errorPayload === 'string' ? errorPayload : `HTTP ${status}`);
+    const isHtml = typeof errorPayload === 'string' && /<(!DOCTYPE|html|head|body)/i.test(errorPayload);
+    const fallbackMessage =
+      status >= 500
+        ? `Сервер недоступен или вернул некорректный ответ (HTTP ${status})`
+        : `Ошибка запроса (HTTP ${status})`;
+    const message =
+      error.message ||
+      (typeof errorPayload === 'string' && errorPayload.trim() && !isHtml
+        ? errorPayload.trim()
+        : fallbackMessage);
     super(message);
     this.name = 'ApiError';
     this.status = status;
-    this.code = error.code || (status === 401 ? 'unauthorized' : 'unknown_error');
+    this.code =
+      error.code || (status === 401 ? 'unauthorized' : status >= 500 ? 'service_unavailable' : 'unknown_error');
     this.message = message;
     this.details = Array.isArray(error.details) ? error.details : [];
     this.raw = errorPayload;
