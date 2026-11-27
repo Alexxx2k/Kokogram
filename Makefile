@@ -4,6 +4,9 @@ export
 endif
 
 COMPOSE = docker compose -f docker-compose.test.yml
+ifneq (,$(wildcard docker-compose.local.yml))
+COMPOSE += -f docker-compose.local.yml
+endif
 
 .PHONY: help up up-full svc down restart ps logs clean migrate migrate-down
 

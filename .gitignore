@@ -10,6 +10,7 @@ htmlcov/
 
 # Env
 .env
+docker-compose.local.yml
 
 # Editors
 .vscode/
