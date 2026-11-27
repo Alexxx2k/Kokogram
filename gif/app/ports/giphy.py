@@ -1,0 +1,6 @@
+from typing import Any, Protocol
+
+
+class GiphyClient(Protocol):
+    async def search(self, q: str, limit: int) -> list[dict[str, Any]]: ...
+    async def trending(self, limit: int) -> list[dict[str, Any]]: ...
