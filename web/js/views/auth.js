@@ -124,12 +124,23 @@ export function initAuthView() {
      Profile Rendering (Screen 4)
      ========================================================================== */
 
+  function getInitials(username) {
+    const raw = (username || '').replace(/[^a-zA-Z0-9_]/g, '');
+    const parts = raw.split('_').filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    if (parts.length === 1) {
+      return parts[0].slice(0, 2).toUpperCase();
+    }
+    return 'U';
+  }
+
   function renderProfile(user) {
     if (!user) return;
 
-    // Compute initials (e.g. alex_psarev -> AP, neo_2026 -> NE)
-    const uname = (user.username || 'User').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-    const initials = uname.length >= 2 ? uname.slice(0, 2) : (uname.slice(0, 1) || 'U');
+    // Compute initials (e.g. alex_psarev -> AP, misha_sob -> MS, neo -> NE)
+    const initials = getInitials(user.username);
 
     if (profileAvatar) profileAvatar.textContent = initials;
     if (profileUsername) profileUsername.textContent = `@${user.username}`;
