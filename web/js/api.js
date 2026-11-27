@@ -157,17 +157,12 @@ function saveMockUsers(users) {
   localStorage.setItem(MOCK_DB_STORAGE_KEY, JSON.stringify(users));
 }
 
-function isPhoneLike(value) {
-  return /^\+?[\d\s\-()]+$/.test(value);
-}
-
 function normalizePhone(phone) {
   if (!phone) return '';
   const trimmed = phone.trim();
-  if (!isPhoneLike(trimmed)) return trimmed;
-  const digits = trimmed.replace(/\D/g, '');
-  if (digits.length === 11 && (digits.startsWith('7') || digits.startsWith('8'))) {
-    return '+7' + digits.slice(1);
+  const compact = trimmed.replace(/[\s\-()]/g, '');
+  if (/^(?:\+7|7|8)\d{10}$/.test(compact)) {
+    return '+7' + compact.slice(-10);
   }
   return trimmed;
 }

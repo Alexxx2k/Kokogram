@@ -274,11 +274,8 @@ export function initAuthView() {
         return ['invalid_email'];
       }
     } else {
-      if (!/^\+?[\d\s\-()]+$/.test(clean)) {
-        return ['invalid_phone'];
-      }
-      const digits = clean.replace(/\D/g, '');
-      if (digits.length !== 11 || !(digits.startsWith('7') || digits.startsWith('8'))) {
+      const compact = clean.replace(/[\s\-()]/g, '');
+      if (!/^(?:\+7|7|8)\d{10}$/.test(compact)) {
         return ['invalid_phone'];
       }
     }
