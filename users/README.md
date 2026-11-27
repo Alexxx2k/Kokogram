@@ -1,10 +1,84 @@
 # Сервис пользователей
 
-Запуск из каталога `users` после установки `requirements.txt`:
+Сервис реализует регистрацию, вход и сессии, профиль, поиск и аватары.
+Контакты и блокировки в этот тикет не входят.
+
+## Локальный запуск
+
+Нужны Python 3.12, Docker Compose и `make`. Из корня репозитория:
+
+```bash
+# Только при первом запуске, если .env ещё нет:
+cp .env.example .env
+```
+
+Заполните `URL_SIGNING_SECRET` в `.env` случайным значением, например результатом
+`openssl rand -hex 32`. Существующий `.env` не перезаписывайте.
+Команды ниже рассчитаны на Bash и shell-совместимый формат `.env`:
+
+```bash
+make up
+
+cd users
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cd ..
+pip install -r db/requirements.txt
+
+# Локальный uvicorn и прямой запуск Alembic сами .env не загружают.
+set -a
+source .env
+set +a
+export POSTGRES_HOST=localhost
+export S3_ENDPOINT_URL=http://localhost:8333
+
+make migrate
+```
+
+При нестандартном порте PostgreSQL задайте также `POSTGRES_PORT`. Если задан
+`DATABASE_URL`, он имеет приоритет над `POSTGRES_*`. Команды активации выше —
+для Linux/macOS; в Git Bash на Windows используйте `source .venv/Scripts/activate`.
+
+Перейдите в каталог сервиса:
+
+```bash
+cd users
+```
+
+Для аватаров создайте bucket по инструкции [ниже](#аватары-и-s3) в активном
+окружении. Для регистрации и профиля наличие bucket не требуется.
+Затем из этого же каталога запустите приложение:
 
 ```bash
 uvicorn app.main:app --reload
 ```
+
+API сервиса: `http://127.0.0.1:8000`; Swagger: `/docs`; OpenAPI: `/openapi.json`.
+Для прямых запросов префикс `/api/v1` не нужен.
+
+## Запуск users в Docker
+
+Подготовьте `.env`, инфраструктуру, миграции и bucket так же, как для локального
+запуска. Из корня репозитория:
+
+```bash
+docker compose -f docker-compose.test.yml --profile full build users
+docker compose -f docker-compose.test.yml --profile full run --rm --no-deps -p 127.0.0.1:8001:8000 users
+```
+
+В этом варианте сервис доступен напрямую на `http://127.0.0.1:8001`.
+`run` использует настройки users из Compose: PostgreSQL — `postgres:5432`,
+S3 — `seaweedfs:8333`. Окружение процесса приложения берётся из секции
+`services.users.environment`, а не автоматически из всех переменных `.env`.
+Произвольные изменения локальных лимитов не попадают в контейнер без добавления
+соответствующих переменных в эту секцию.
+
+`make up-full` запускает все компоненты. При обычном `up` порт users наружу не
+публикуется; доступ через `/api/v1` требует работающей реализации Gateway.
+Показанный выше `run` позволяет проверить users отдельно от готовности Gateway.
+
+## Настройки
 
 Настройки читаются из переменных окружения. Файл `.env` автоматически не загружается:
 при локальном запуске переменные нужно экспортировать в окружение процесса.
@@ -132,7 +206,8 @@ DI-функция `get_current_user` проверяет Bearer-токен чер
 
 ## Профиль и поиск
 
-Все внешние эндпоинты `/users` требуют `Authorization: Bearer <token>`:
+Эндпоинты профиля и поиска из таблицы требуют `Authorization: Bearer <token>`.
+Исключение — скачивание аватара по подписанной ссылке, описанное ниже.
 
 | Метод и путь | Поведение |
 |---|---|
@@ -183,12 +258,17 @@ python - <<'PY'
 import boto3
 from botocore import UNSIGNED
 from botocore.config import Config
+from app.config import Settings
 
+settings = Settings.from_env()
 client = boto3.client(
-    "s3", endpoint_url="http://localhost:8333",
+    "s3", endpoint_url=settings.s3_endpoint_url,
     config=Config(signature_version=UNSIGNED, s3={"addressing_style": "path"}),
 )
-client.create_bucket(Bucket="kokogram")
+try:
+    client.create_bucket(Bucket=settings.s3_bucket)
+finally:
+    client.close()
 PY
 ```
 
@@ -235,3 +315,92 @@ Bearer-токен не требуется. Неверная, отсутству�
 при подписании и проверке. Ссылки выдаются во всех ответах с пользователями:
 профиль, login, поиск, внутренний пакетный запрос. После истечения ссылки
 повторно запросите профиль. В БД хранится только ключ S3, а не URL и не файл.
+
+## Последовательность ручной проверки
+
+При работающем локальном сервисе зарегистрируйте нового пользователя примером
+из раздела регистрации. Затем получите токен (команды Bash):
+
+```bash
+users_login=$(curl --fail-with-body -sS http://localhost:8000/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"login":"alice@example.org","password":"hello123"}')
+users_token=$(printf '%s' "$users_login" | python -c 'import json,sys; print(json.load(sys.stdin)["token"])')
+
+curl -i http://localhost:8000/users/me \
+  -H "Authorization: Bearer $users_token"
+curl -i 'http://localhost:8000/users?username=alice' \
+  -H "Authorization: Bearer $users_token"
+```
+
+Ожидается `200`; свой профиль содержит email и phone, поиск — только публичные поля.
+Сохраните ID пользователя из ответа для пакетного запроса `/internal/users?ids=...`.
+Для аватара используйте существующий локальный JPEG/PNG:
+
+```bash
+users_profile=$(curl --fail-with-body -sS -X PUT http://localhost:8000/users/me/avatar \
+  -H "Authorization: Bearer $users_token" \
+  -F 'file=@avatar.png')
+users_avatar_path=$(printf '%s' "$users_profile" | python -c 'import json,sys; print(json.load(sys.stdin)["avatar_url"].removeprefix("/api/v1"))')
+curl --fail-with-body -sS "http://localhost:8000$users_avatar_path" -o /tmp/kokogram-avatar-download
+
+curl -i -X POST http://localhost:8000/auth/logout \
+  -H "Authorization: Bearer $users_token"
+curl -i http://localhost:8000/users/me \
+  -H "Authorization: Bearer $users_token"
+```
+
+Выход возвращает `204` без тела, последующий запрос профиля — `401 unauthorized`.
+Это примеры ручных запросов, автоматические тесты в рамках тикета не добавлялись.
+
+| Что проверить | Ожидаемый результат |
+|---|---|
+| Регистрация с email или телефоном | `201`; в БД bcrypt-хэш с cost 10 |
+| Повтор контакта с другим регистром email или записью телефона | `409 email_taken` или `409 phone_taken` |
+| Повтор username при регистрации или PATCH | `409 username_taken`; остальные изменения откатываются |
+| Неверный пароль или логин | `401 invalid_credentials`, новая сессия не создаётся |
+| Два входа и выход из одной сессии | Вторая сессия остаётся действующей |
+| Проверка токена в `/internal/sessions/verify` | `200 {user_id}`; неизвестный или просроченный — `401` |
+| PATCH только одного поля / `status: null` | Остальные поля сохранены / статус очищен |
+| Поиск части username | Пустой `items`, если это не полный username другого пользователя |
+| Пакет из 100 / 101 ID | `200` / `422` |
+| JPEG/PNG ровно 5242880 / больше 5242880 байт | `200` / `413 file_too_large` |
+| Повреждённое изображение или другой формат | `422`, причина `avatar_format` |
+| Замена аватара | В БД новый ключ; прежний объект удалён после commit |
+| Изменённая или просроченная подпись ссылки | `401 unauthorized` |
+
+## Связь с требованиями и границы проверки
+
+| Требования FS | Реализация |
+|---|---|
+| F_Auth_1–8, F_Auth_12–14 | Регистрация, валидаторы, нормализация, уникальность PostgreSQL |
+| F_Auth_9–11 | Вход по email/телефону и проверка bcrypt |
+| F_Auth_15–16 | Выход из текущей сессии, несколько независимых сессий |
+| F_Prof_1–4, F_Prof_8–10 | Чтение и изменение профиля |
+| F_Prof_5–7 | S3-аватары, проверка формата и размера |
+| F_Search_1–2 | Точный поиск по username |
+| NF_Sec_2–4 | bcrypt, ограничение срока сессии, SHA-256 токенов |
+| NF_Perf_1–3 | Требуют отдельного измерения на согласованном окружении |
+
+Архитектурные основания: HLD §1.1, §1.5, §3–3.1, §4.1–4.3, §4.6, §5.1–5.3,
+§5.5. Исходные документы: [FS](../docs/FS-spec.pdf), [HLD](../docs/HLD.pdf).
+
+На этапах реализации вручную проверялись реальные PostgreSQL и SeaweedFS,
+конфликты уникальности, несколько сессий, граница срока сессии и подписанной
+ссылки через `FakeClock`, приватность профилей, лимиты, rollback и одновременная
+замена аватаров. Это не заменяет отдельный тикет с автоматическими тестами.
+Полный E2E через Gateway и браузер, а также измерения NF_Perf_1–3 не проводились.
+`/health` пока подтверждает работу процесса приложения, а не готовность БД/S3.
+
+Перед PR из корня репозитория:
+
+```bash
+ruff check .
+ruff format --check .
+docker compose --env-file .env.example -f docker-compose.test.yml --profile full config --quiet
+```
+
+Последняя команда проверяет конфигурацию Compose, не запускает контейнеры и не
+подтверждает готовность зависимостей. Успешный локальный Ruff не означает,
+что удалённый CI уже выполнен. В PR укажите перечисленные FS/HLD, `Closes #N`
+с фактическим номером тикета и результаты проверок; название PR — имя ветки.

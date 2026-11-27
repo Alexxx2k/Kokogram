@@ -31,7 +31,8 @@ class SqlAlchemyUserRepository:
 
     async def get_by_id_for_update(self, user_id: UUID) -> User | None:
         return await self._fetch_one(
-            sa.select(users).where(users.c.id == user_id).with_for_update() #чтоб строку заблочить до конца транзакции
+            # чтоб строку заблочить до конца транзакции
+            sa.select(users).where(users.c.id == user_id).with_for_update()
         )
 
     async def get_by_email(self, email: str) -> User | None:

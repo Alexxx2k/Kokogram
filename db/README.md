@@ -32,7 +32,8 @@ make migrate-down  # alembic downgrade base (удаляет все таблиц�
 Адрес БД: `DATABASE_URL` (например `postgresql://user:pass@localhost:5432/db`), а если он
 не задан, то `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_HOST`
 (по умолчанию `localhost`), `POSTGRES_PORT` (по умолчанию `5432`). Драйвер psycopg 3
-нужен только миграциям; драйверы сервисов выбираются в их тикетах.
+используют миграции и сервис пользователей; зависимости каждого сервиса
+устанавливаются из его `requirements.txt`.
 
 ## Как писать миграцию
 
