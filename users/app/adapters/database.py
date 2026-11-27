@@ -59,7 +59,7 @@ class TransactionCallbacks:
             try:
                 await callback()
             except Exception:
-                #сбой очистки не меняет уже завершённую транзакцию и не скрывает её ошибку.
+                # сбой очистки не меняет уже завершённую транзакцию и не скрывает её ошибку.
                 logger.exception(
                     "avatar_cleanup_failed", extra={"error_code": "service_unavailable"}
                 )
