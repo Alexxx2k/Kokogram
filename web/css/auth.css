@@ -3,6 +3,7 @@
    ========================================================================== */
 
 :root {
+  color-scheme: dark;
   --bg-main: #080512;
   --bg-card: #0c081d;
   --bg-input: #080415;
@@ -216,9 +217,46 @@ body {
   box-shadow: 0 0 8px var(--pink-glow);
 }
 
-.form-input.has-error {
+.form-input.has-error,
+.form-input.has-error:-webkit-autofill,
+.form-input.has-error:-webkit-autofill:focus {
   border-color: var(--red) !important;
-  box-shadow: 0 0 8px rgba(255, 42, 85, 0.4) !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--bg-input) inset, 0 0 8px rgba(255, 42, 85, 0.4) !important;
+  box-shadow: 0 0 0 1000px var(--bg-input) inset, 0 0 8px rgba(255, 42, 85, 0.4) !important;
+}
+
+/* Override browser autofill white/light-blue background */
+.form-input:-webkit-autofill,
+.form-input:-webkit-autofill:hover,
+.form-input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--cyan);
+  caret-color: var(--cyan);
+  -webkit-box-shadow: 0 0 0 1000px var(--bg-input) inset;
+  box-shadow: 0 0 0 1000px var(--bg-input) inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+.form-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--cyan);
+  caret-color: var(--cyan);
+  border-color: var(--cyan);
+  -webkit-box-shadow: 0 0 0 1000px var(--bg-input) inset, 0 0 8px var(--cyan-glow);
+  box-shadow: 0 0 0 1000px var(--bg-input) inset, 0 0 8px var(--cyan-glow);
+}
+
+.theme-pink .form-input:-webkit-autofill,
+.theme-pink .form-input:-webkit-autofill:hover,
+.theme-pink .form-input:-webkit-autofill:active {
+  -webkit-text-fill-color: #ffffff;
+  caret-color: #ffffff;
+}
+
+.theme-pink .form-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #ffffff;
+  caret-color: #ffffff;
+  border-color: var(--pink);
+  -webkit-box-shadow: 0 0 0 1000px var(--bg-input) inset, 0 0 8px var(--pink-glow);
+  box-shadow: 0 0 0 1000px var(--bg-input) inset, 0 0 8px var(--pink-glow);
 }
 
 .field-error {
